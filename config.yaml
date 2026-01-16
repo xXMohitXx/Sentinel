@@ -1,0 +1,39 @@
+# Sentinel Configuration
+# Developer-first local LLM tracing, replay & debugging system
+
+# Storage settings
+storage:
+  # Base directory for traces (defaults to ~/.sentinel)
+  base_dir: ~/.sentinel
+  # Primary storage format
+  format: json
+  # Enable SQLite indexing for fast queries
+  sqlite_index: true
+
+# Server settings
+server:
+  host: 127.0.0.1
+  port: 8000
+  # Enable CORS for UI access
+  cors_enabled: true
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+
+# Tracing settings
+tracing:
+  # Automatically capture all LLM calls
+  auto_capture: true
+  # Include token-level details in traces
+  include_tokens: true
+  # Maximum response text length to store (0 = unlimited)
+  max_response_length: 0
+
+# Adapters
+adapters:
+  openai:
+    enabled: true
+  llama:
+    enabled: false
+    # Path to llama model file
+    model_path: null

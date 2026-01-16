@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sentinel"
+version = "0.1.0"
+description = "Developer-first local LLM tracing, replay & debugging system"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Sentinel Team"}
+]
+keywords = ["llm", "tracing", "debugging", "replay", "observability"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.5.0",
+    "openai>=1.0.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.26.0",
+]
+llama = [
+    "llama-cpp-python>=0.2.0",
+]
+
+[project.scripts]
+sentinel = "cli.main:main"
+
+[project.urls]
+Homepage = "https://github.com/sentinel/sentinel"
+Documentation = "https://github.com/sentinel/sentinel#readme"
+
+[tool.setuptools.packages.find]
+include = ["sdk*", "server*", "cli*"]
