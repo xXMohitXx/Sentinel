@@ -1,229 +1,406 @@
-# Sentinel - Project Documentation
+# Sentinel Documentation
 
-> **Developer-First Local LLM Tracing, Replay & Debugging System**
-> 
-> Current Version: **v0.1.0** | Status: **MVP Complete**
+Complete technical documentation for the Sentinel LLM debugging platform.
 
 ---
 
-## 📊 Development Stage
+## Table of Contents
 
-Based on the original roadmap, we are at **~Phase 5-6 Complete**:
-
-| Phase | Description | Status |
-|-------|-------------|--------|
-| Phase 0 | Design Lock | ✅ Complete |
-| Phase 1 | SDK Core | ✅ Complete |
-| Phase 2 | Runtime Adapters | ✅ Complete (OpenAI + Gemini) |
-| Phase 3 | FastAPI Server | ✅ Complete |
-| Phase 4 | Replay Engine | ✅ Complete |
-| Phase 5 | CLI | ✅ Complete |
-| Phase 6 | UI | ✅ Complete |
-| Phase 7 | Integration & Polish | 🔄 In Progress |
+1. [Overview](#overview)
+2. [SDK Reference](#sdk-reference)
+3. [Expectation Engine](#expectation-engine)
+4. [Golden Traces](#golden-traces)
+5. [CLI Reference](#cli-reference)
+6. [API Reference](#api-reference)
+7. [Storage](#storage)
+8. [CI Integration](#ci-integration)
 
 ---
 
-## 🎯 Current Capabilities
+## Overview
 
-### ✅ SDK (Python Package)
+Sentinel is a **local-first developer tool** that records, reproduces, compares, and debugs LLM calls.
 
-**Trace Capture Layer**
-- Function decorator `@trace` for automatic tracing
-- Context manager for manual control
-- Explicit `CaptureLayer` class for full control
+### Core Capabilities
 
-**Adapters (LLM Providers)**
-| Provider | Status | Models Tested |
-|----------|--------|---------------|
-| OpenAI | ✅ Full Support | GPT-4, GPT-4o-mini |
-| Google Gemini | ✅ Full Support | Gemini 2.5 Flash |
-| Llama.cpp | 🔧 Stub Ready | - |
+| Capability | Description |
+|------------|-------------|
+| **Trace Capture** | Record every LLM call with full context |
+| **Replay** | Re-execute traces with optional overrides |
+| **Expectations** | Define PASS/FAIL rules for LLM outputs |
+| **Golden Traces** | Baseline comparisons for regression detection |
+| **CI Integration** | Fail builds when LLM outputs regress |
 
-**Trace Schema**
-- Immutable, JSON-serializable traces
-- Full request/response capture
-- Token usage tracking
-- Latency measurement
-- Replay lineage tracking
+### Current Status
 
----
+**Phase 10 of 12 Complete**
 
-### ✅ Server (FastAPI)
-
-**API Endpoints**
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/v1/traces` | GET | List all traces with filtering |
-| `/v1/traces/{id}` | GET | Get specific trace details |
-| `/v1/traces` | POST | Create a new trace |
-| `/v1/traces/{id}` | DELETE | Delete a trace |
-| `/v1/traces/{id}/lineage` | GET | Get replay lineage chain |
-| `/v1/replay/{id}` | POST | Replay a trace |
-| `/v1/replay/{id}/preview` | GET | Preview replay without executing |
-| `/v1/chat/completions` | POST | OpenAI-compatible endpoint |
-| `/health` | GET | Health check |
-| `/docs` | GET | Swagger API documentation |
-
-**Storage**
-- JSON file-based storage (primary)
-- Organized by date (`~/.sentinel/traces/YYYY-MM-DD/`)
-- SQLite index (optional, for fast queries)
+- ✅ SDK with OpenAI, Gemini, Llama adapters
+- ✅ FastAPI server with REST API
+- ✅ CLI with list, show, replay, bless, check commands
+- ✅ Web UI with verdict display and filtering
+- ✅ Expectation Engine (4 deterministic rules)
+- ✅ Golden Traces with hash comparison
+- ✅ CI integration with exit code signaling
 
 ---
 
-### ✅ CLI (Command Line Interface)
+## SDK Reference
 
-```bash
-sentinel init          # Initialize configuration
-sentinel server        # Start the server
-sentinel list          # List recent traces
-sentinel show <id>     # Show trace details
-sentinel replay <id>   # Replay a trace
+### Installation
+
+```python
+# Import the SDK
+from sdk import trace, expect, Trace, Verdict
+from sdk.adapters.gemini import GeminiAdapter
+from sdk.adapters.openai import OpenAIAdapter
 ```
 
----
+### @trace Decorator
 
-### ✅ Web UI (Trace Inspector)
+Automatically capture LLM calls:
 
-- **Trace List**: View all captured traces with metadata
-- **Detail View**: Full request/response inspection
-- **Replay Button**: Re-execute traces with one click
-- **Real-time Updates**: Refresh to see new traces
-- **Dark Theme**: Modern, developer-friendly design
+```python
+from sdk.decorator import trace
 
-Access at: `http://127.0.0.1:8000/ui`
-
----
-
-## 🏗️ Architecture
-
-```
-┌──────────────────────────┐
-│     Application Code      │
-│  (Your Python/LangChain)  │
-└────────────▲─────────────┘
-             │ @trace decorator
-┌────────────┴─────────────┐
-│   SDK Capture Layer       │  ← Intercepts LLM calls
-│   - OpenAI Adapter        │
-│   - Gemini Adapter        │
-└────────────▲─────────────┘
-             │ HTTP / SDK
-┌────────────┴─────────────┐
-│   FastAPI Server          │  ← Stores & serves traces
-│   - REST API              │
-│   - Replay Engine         │
-│   - File Storage          │
-└────────────▲─────────────┘
-             │
-┌────────────┴─────────────┐
-│   Web UI                  │  ← Visual inspection
-└──────────────────────────┘
+@trace(provider="gemini", model="gemini-2.5-flash")
+def my_function(prompt):
+    adapter = GeminiAdapter()
+    return adapter.generate(prompt)
 ```
 
----
+**Parameters:**
+- `provider` (str): "openai" | "gemini" | "local"
+- `model` (str, optional): Override model name
 
-## 📁 Project Structure
+### @expect Decorator
 
-```
-sentinel_v0/
-├── sdk/                    # Python SDK
-│   ├── schema.py           # Trace schema (Pydantic)
-│   ├── capture.py          # Core capture layer
-│   ├── decorator.py        # @trace decorator
-│   └── adapters/           # Provider adapters
-│       ├── openai.py       # OpenAI integration
-│       ├── gemini.py       # Google Gemini integration
-│       └── llama.py        # Llama.cpp stub
-├── server/                 # FastAPI backend
-│   ├── main.py             # App entry point
-│   ├── routes/             # API endpoints
-│   │   ├── traces.py       # CRUD operations
-│   │   ├── replay.py       # Replay engine
-│   │   └── chat.py         # OpenAI-compatible
-│   └── storage/            # Persistence
-│       ├── files.py        # JSON storage
-│       └── sqlite.py       # SQLite index
-├── cli/                    # Command line
-│   └── main.py             # CLI commands
-├── ui/                     # Web interface
-│   ├── index.html          # Trace inspector
-│   └── app.js              # UI logic
-├── examples/               # Example scripts
-│   ├── test_openai_call.py
-│   └── test_gemini_call.py
-└── tests/                  # Test suite
-    └── test_schema.py
+Define expectations for automatic PASS/FAIL verdicts:
+
+```python
+from sdk.decorator import trace, expect
+
+@trace(provider="gemini")
+@expect(
+    must_include=["refund"],
+    must_not_include=["I'm sorry"],
+    max_latency_ms=1500,
+    min_tokens=10
+)
+def customer_support(query):
+    return llm.generate(query)
 ```
 
----
+### Adapters
 
-## 🚀 Quick Start
-
-```bash
-# 1. Activate environment
-.\sentinel\Scripts\activate
-
-# 2. Set API keys
-$env:GOOGLE_API_KEY = "your-key"
-$env:OPENAI_API_KEY = "your-key"  # Optional
-
-# 3. Start server
-python -m uvicorn server.main:app --reload
-
-# 4. Open UI
-# http://127.0.0.1:8000/ui
-
-# 5. Run a test
-python examples\test_gemini_call.py
-```
-
----
-
-## 🔮 What's Next (Phase 7+)
-
-| Feature | Priority | Status |
-|---------|----------|--------|
-| LangChain integration example | High | Planned |
-| Diff view for replay comparison | Medium | Planned |
-| Export traces to JSON/CSV | Medium | Planned |
-| Streaming response support | Medium | Planned |
-| More adapters (Anthropic, Cohere) | Low | Planned |
-| PyPI package publishing | High | Planned |
-
----
-
-## 📝 Key Design Decisions
-
-1. **Local-First**: All data stays on your machine
-2. **Zero Infrastructure**: JSON + SQLite, no external services
-3. **Provider Agnostic**: Works with any LLM via adapters
-4. **Immutable Traces**: Once created, traces never change
-5. **Replay Lineage**: Track the history of replayed traces
-6. **OpenAI Compatible**: Drop-in replacement for OpenAI base URL
-
----
-
-## 🤝 Usage Example
-
+#### GeminiAdapter
 ```python
 from sdk.adapters.gemini import GeminiAdapter
 
-# Create adapter (auto-traces all calls)
-adapter = GeminiAdapter(api_key="your-key")
-
-# Make a call - automatically captured!
-response, trace = adapter.chat_completion(
+adapter = GeminiAdapter(api_key="...")  # or use GOOGLE_API_KEY env
+response, trace = adapter.generate(
+    prompt="Hello!",
     model="gemini-2.5-flash",
-    messages=[{"role": "user", "content": "Hello!"}]
+    temperature=0.7,
+    max_tokens=256
 )
+```
 
-print(f"Response: {response.text}")
-print(f"Trace ID: {trace.trace_id}")
-print(f"Latency: {trace.response.latency_ms}ms")
+#### OpenAIAdapter
+```python
+from sdk.adapters.openai import OpenAIAdapter
+
+adapter = OpenAIAdapter(api_key="...")  # or use OPENAI_API_KEY env
+response, trace = adapter.chat_completion(
+    model="gpt-4",
+    messages=[{"role": "user", "content": "Hello!"}],
+    temperature=0.7
+)
+```
+
+### Trace Schema
+
+```python
+class Trace:
+    trace_id: str           # UUID
+    timestamp: str          # ISO-8601 local time
+    request: TraceRequest   # Input data
+    response: TraceResponse # Output data
+    runtime: TraceRuntime   # Environment info
+    verdict: Verdict | None # PASS/FAIL (if expectations set)
+    blessed: bool           # Is this a golden trace?
+    replay_of: str | None   # Parent trace ID if replayed
+    metadata: dict | None   # Custom metadata
 ```
 
 ---
 
-*Last Updated: 2026-01-17*
+## Expectation Engine
+
+Phase 8 introduced deterministic rules for automatic PASS/FAIL verdicts.
+
+### Rules
+
+| Rule | Severity | Description |
+|------|----------|-------------|
+| `must_include` | LOW | Substring(s) must appear in response |
+| `must_not_include` | HIGH | Substring(s) must NOT appear |
+| `max_latency_ms` | MEDIUM | Response time ceiling |
+| `min_tokens` | LOW | Minimum response length |
+
+### Verdict Model
+
+```python
+class Verdict:
+    status: "pass" | "fail"
+    severity: "low" | "medium" | "high" | None
+    violations: list[str]  # Human-readable violation messages
+```
+
+### Design Rules
+
+1. **Computed at trace creation** - Never deferred
+2. **Immutable once written** - Traces are audit artifacts
+3. **Deterministic only** - No AI-based judgment
+4. **All violations reported** - No short-circuiting
+
+### Programmatic Usage
+
+```python
+from sdk.expectations import evaluate
+
+verdict = evaluate(
+    response_text="Paris is the capital of France",
+    latency_ms=1200,
+    must_include=["paris"],
+    max_latency_ms=2000
+)
+
+print(verdict.status)  # "pass"
+```
+
+---
+
+## Golden Traces
+
+Phase 9 introduced baseline traces for regression detection.
+
+### Blessing a Trace
+
+```bash
+# Interactive (with confirmation)
+sentinel bless <trace_id>
+
+# Skip confirmation
+sentinel bless <trace_id> --yes
+
+# Override existing golden for same model
+sentinel bless <trace_id> --force
+```
+
+### How It Works
+
+1. When blessed, the trace's output is **hashed** and stored
+2. Only **one golden trace per model/provider** is allowed
+3. During `sentinel check`, outputs are compared against golden hashes
+4. If hash differs → **FAIL**
+
+### Storage
+
+Golden traces have:
+```json
+{
+  "blessed": true,
+  "metadata": {
+    "output_hash": "sha256_prefix_16_chars",
+    "blessed_at": "2026-01-17T16:00:00"
+  }
+}
+```
+
+---
+
+## CLI Reference
+
+### sentinel init
+Initialize Sentinel configuration.
+
+```bash
+sentinel init
+sentinel init --force  # Overwrite existing
+```
+
+### sentinel server
+Start the API server.
+
+```bash
+sentinel server
+sentinel server --port 8080
+sentinel server --reload  # Auto-reload on changes
+```
+
+### sentinel list
+List traces.
+
+```bash
+sentinel list
+sentinel list -n 10        # Limit to 10
+sentinel list --failed     # Failed traces only
+sentinel list --model gpt-4
+```
+
+### sentinel show
+Show trace details.
+
+```bash
+sentinel show <trace_id>
+sentinel show <trace_id> --json
+```
+
+### sentinel replay
+Replay a trace.
+
+```bash
+sentinel replay <trace_id>
+sentinel replay <trace_id> --model gpt-4o  # Override model
+sentinel replay <trace_id> --dry-run       # Preview only
+```
+
+### sentinel bless
+Mark a trace as golden baseline.
+
+```bash
+sentinel bless <trace_id>
+sentinel bless <trace_id> --yes    # Skip confirmation
+sentinel bless <trace_id> --force  # Override existing
+```
+
+### sentinel check
+**CI-safe command.** Replays all golden traces and exits:
+- `0` - All pass
+- `1` - Any failure
+
+```bash
+sentinel check
+sentinel check --json  # Output JSON report
+```
+
+---
+
+## API Reference
+
+Base URL: `http://127.0.0.1:8000`
+
+### Traces
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/traces` | List traces |
+| GET | `/v1/traces/{id}` | Get trace |
+| POST | `/v1/traces` | Create trace |
+| DELETE | `/v1/traces/{id}` | Delete trace |
+| GET | `/v1/traces/{id}/lineage` | Get replay chain |
+
+### Replay
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/v1/replay/{id}` | Replay trace |
+| GET | `/v1/replay/{id}/preview` | Preview replay |
+
+### Chat (OpenAI-compatible)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/v1/chat/completions` | OpenAI-compatible chat |
+
+### Health
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+
+---
+
+## Storage
+
+### File Structure
+
+```
+~/.sentinel/
+├── config.yaml          # Configuration
+├── traces/              # Trace storage
+│   └── YYYY-MM-DD/      # Date-organized
+│       └── <id>.json    # Individual traces
+└── sentinel.db          # SQLite index (optional)
+```
+
+### Trace Files
+
+Each trace is a JSON file:
+```json
+{
+  "trace_id": "uuid",
+  "timestamp": "2026-01-17T16:00:00",
+  "request": { ... },
+  "response": { ... },
+  "runtime": { ... },
+  "verdict": { "status": "pass", ... },
+  "blessed": false
+}
+```
+
+---
+
+## CI Integration
+
+### GitHub Actions
+
+```yaml
+name: Sentinel Check
+
+on: [push, pull_request]
+
+jobs:
+  sentinel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install -r requirements.txt
+      - run: python -m cli.main check --json
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+```
+
+### Pytest Integration
+
+```python
+import subprocess
+import sys
+
+def test_sentinel_check():
+    result = subprocess.run(
+        [sys.executable, "-m", "cli.main", "check"],
+        capture_output=True
+    )
+    assert result.returncode == 0, "Golden trace regression!"
+```
+
+---
+
+## Environment Variables
+
+| Variable | Description |
+|----------|-------------|
+| `GOOGLE_API_KEY` | Gemini API key |
+| `OPENAI_API_KEY` | OpenAI API key |
+| `SENTINEL_HOME` | Override config directory |
+
+---
+
+## Contributing
+
+See [README.md](README.md#-contributing) for contribution guidelines.
