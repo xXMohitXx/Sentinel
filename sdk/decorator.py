@@ -3,6 +3,10 @@ Decorator - Function Decorator for Tracing
 
 Provides a clean decorator interface for tracing LLM calls.
 No reflection, no AST tricks — explicit, debuggable Python.
+
+Decorators:
+- @trace: Capture LLM calls automatically
+- @expect: Define expectations for validation
 """
 
 import functools
@@ -12,6 +16,47 @@ from sdk.capture import get_capture_layer, CaptureLayer
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+# Store expectations per function (set by @expect decorator)
+_function_expectations: dict[Callable, dict[str, Any]] = {}
+
+
+def expect(
+    must_include: Optional[list[str]] = None,
+    must_not_include: Optional[list[str]] = None,
+    max_latency_ms: Optional[int] = None,
+    min_tokens: Optional[int] = None,
+) -> Callable[[Callable[P, T]], Callable[P, T]]:
+    """
+    Decorator to define expectations for LLM calls.
+    
+    Use with @trace to automatically validate responses.
+    
+    Usage:
+        @trace(provider="gemini")
+        @expect(must_include=["refund"], max_latency_ms=1500)
+        def reply(prompt):
+            ...
+    
+    Args:
+        must_include: Substrings that must appear in response
+        must_not_include: Substrings that must NOT appear
+        max_latency_ms: Maximum latency threshold
+        min_tokens: Minimum token count
+        
+    Returns:
+        Decorated function with attached expectations
+    """
+    def decorator(func: Callable[P, T]) -> Callable[P, T]:
+        # Store expectations for this function
+        _function_expectations[func] = {
+            "must_include": must_include,
+            "must_not_include": must_not_include,
+            "max_latency_ms": max_latency_ms,
+            "min_tokens": min_tokens,
+        }
+        return func
+    return decorator
 
 
 def trace(
@@ -56,7 +101,10 @@ def trace(
             # Determine the model
             actual_model = model or _extract_model(kwargs, result)
             
-            # Create and store the trace
+            # Get expectations if any
+            expectations = _function_expectations.get(func)
+            
+            # Create and store the trace (with verdict if expectations exist)
             _create_trace(
                 layer=layer,
                 provider=provider,
@@ -65,6 +113,7 @@ def trace(
                 parameters=parameters,
                 result=result,
                 latency_ms=latency_ms,
+                expectations=expectations,
             )
             
             return result
@@ -120,6 +169,7 @@ def _create_trace(
     parameters: dict[str, Any],
     result: Any,
     latency_ms: int,
+    expectations: Optional[dict[str, Any]] = None,
 ) -> None:
     """Create and store a trace from the captured data."""
     from sdk.schema import (
@@ -129,6 +179,7 @@ def _create_trace(
         TraceRuntime,
         TraceMessage,
         TraceParameters,
+        Verdict,
     )
     
     # Build request
@@ -156,11 +207,26 @@ def _create_trace(
         version=layer._get_library_version(provider),
     )
     
+    # Evaluate expectations and create verdict (computed at trace creation time)
+    verdict = None
+    if expectations:
+        from sdk.expectations import evaluate
+        verdict = evaluate(
+            response_text=response_text,
+            latency_ms=latency_ms,
+            must_include=expectations.get("must_include"),
+            must_not_include=expectations.get("must_not_include"),
+            max_latency_ms=expectations.get("max_latency_ms"),
+            min_tokens=expectations.get("min_tokens"),
+        )
+    
     # Create and store trace
     trace = Trace(
         request=request,
         response=response,
         runtime=runtime,
+        verdict=verdict,
     )
     
     layer._store_trace(trace)
+

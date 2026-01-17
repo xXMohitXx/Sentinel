@@ -205,3 +205,98 @@ class FileStorage:
                     queue.append(t)
         
         return lineage
+    
+    def update_trace(self, trace: Trace) -> bool:
+        """
+        Update an existing trace in storage.
+        
+        Args:
+            trace: The trace to update
+            
+        Returns:
+            True if updated, False if not found
+        """
+        # Find and update the trace
+        for date_dir in self.traces_path.iterdir():
+            if date_dir.is_dir():
+                trace_file = date_dir / f"{trace.trace_id}.json"
+                if trace_file.exists():
+                    with open(trace_file, "w", encoding="utf-8") as f:
+                        json.dump(trace.model_dump(), f, indent=2, ensure_ascii=False)
+                    return True
+        
+        return False
+    
+    def bless_trace(self, trace_id: str) -> Optional[Trace]:
+        """
+        Mark a trace as blessed (golden reference).
+        
+        Args:
+            trace_id: The trace ID to bless
+            
+        Returns:
+            The blessed trace, or None if not found
+        """
+        trace = self.get_trace(trace_id)
+        if trace is None:
+            return None
+        
+        # Create new trace with blessed=True
+        # We need to recreate the trace since Pydantic models may not allow mutation
+        import hashlib
+        
+        # Calculate output hash for comparison
+        output_hash = hashlib.sha256(trace.response.text.encode()).hexdigest()[:16]
+        
+        # Update trace data
+        trace_data = trace.model_dump()
+        trace_data["blessed"] = True
+        trace_data["metadata"] = trace_data.get("metadata") or {}
+        trace_data["metadata"]["output_hash"] = output_hash
+        trace_data["metadata"]["blessed_at"] = datetime.utcnow().isoformat()
+        
+        blessed_trace = Trace(**trace_data)
+        self.update_trace(blessed_trace)
+        
+        return blessed_trace
+    
+    def unbless_trace(self, trace_id: str) -> bool:
+        """
+        Remove blessed status from a trace.
+        
+        Returns:
+            True if updated, False if not found
+        """
+        trace = self.get_trace(trace_id)
+        if trace is None:
+            return False
+        
+        trace_data = trace.model_dump()
+        trace_data["blessed"] = False
+        
+        updated_trace = Trace(**trace_data)
+        return self.update_trace(updated_trace)
+    
+    def list_blessed_traces(self) -> list[Trace]:
+        """
+        List all blessed (golden) traces.
+        
+        Returns:
+            List of blessed traces
+        """
+        all_traces = self.list_traces(limit=10000)
+        return [t for t in all_traces if t.blessed]
+    
+    def get_golden_for_model(self, model: str, provider: str) -> Optional[Trace]:
+        """
+        Get the golden trace for a specific model/provider combination.
+        
+        Returns:
+            The golden trace, or None if not found
+        """
+        blessed = self.list_blessed_traces()
+        for trace in blessed:
+            if trace.request.model == model and trace.request.provider == provider:
+                return trace
+        return None
+

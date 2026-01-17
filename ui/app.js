@@ -64,9 +64,23 @@ function renderTraceList() {
         const preview = trace.request.messages?.[0]?.content?.substring(0, 50) || 'No message';
         const isActive = trace.trace_id === currentTraceId ? 'active' : '';
 
+        // Verdict indicator
+        let verdictIcon = '⏳';
+        let verdictClass = 'verdict-pending';
+        if (trace.verdict) {
+            if (trace.verdict.status === 'pass') {
+                verdictIcon = '✅';
+                verdictClass = 'verdict-pass';
+            } else {
+                verdictIcon = '❌';
+                verdictClass = 'verdict-fail';
+            }
+        }
+
         return `
-            <li class="trace-item ${isActive}" onclick="selectTrace('${trace.trace_id}')">
+            <li class="trace-item ${isActive} ${verdictClass}" onclick="selectTrace('${trace.trace_id}')">
                 <div class="trace-item-header">
+                    <span class="verdict-icon">${verdictIcon}</span>
                     <span class="trace-model">${trace.request.model}</span>
                     <span class="trace-time">${time}</span>
                 </div>
@@ -75,6 +89,7 @@ function renderTraceList() {
                     <span>${trace.request.provider}</span>
                     <span>${trace.response.latency_ms}ms</span>
                     ${trace.replay_of ? '<span>↩ Replay</span>' : ''}
+                    ${trace.blessed ? '<span>⭐ Golden</span>' : ''}
                 </div>
             </li>
         `;
@@ -105,7 +120,36 @@ async function selectTrace(traceId) {
 
         replayBtn.disabled = false;
 
+        // Verdict section
+        let verdictHtml = '';
+        if (trace.verdict) {
+            if (trace.verdict.status === 'pass') {
+                verdictHtml = `
+                    <div class="verdict-banner verdict-pass">
+                        <span class="verdict-icon">✅</span>
+                        <span class="verdict-text">VERDICT: PASS</span>
+                    </div>
+                `;
+            } else {
+                verdictHtml = `
+                    <div class="verdict-banner verdict-fail">
+                        <span class="verdict-icon">❌</span>
+                        <span class="verdict-text">VERDICT: FAIL</span>
+                        <span class="verdict-severity">(Severity: ${trace.verdict.severity})</span>
+                    </div>
+                    <div class="violations">
+                        <h4>Violations:</h4>
+                        <ul>
+                            ${trace.verdict.violations.map(v => `<li>${escapeHtml(v)}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+
         detail.innerHTML = `
+            ${verdictHtml}
+            
             <div class="detail-section">
                 <h3>Trace Info</h3>
                 <div class="detail-content">
@@ -114,6 +158,7 @@ Timestamp: ${trace.timestamp}
 Model: ${trace.request.model}
 Provider: ${trace.request.provider}
 Latency: ${trace.response.latency_ms}ms
+Blessed: ${trace.blessed ? 'Yes ⭐' : 'No'}
 ${trace.replay_of ? `Replay of: ${trace.replay_of}` : ''}
                 </div>
             </div>

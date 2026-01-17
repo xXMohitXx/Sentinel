@@ -5,12 +5,32 @@ All traces conform to this schema. Design rules:
 - Immutable after creation
 - JSON-serializable
 - Portable across machines
+- Verdicts are computed at trace creation time and never recalculated
 """
 
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 from pydantic import BaseModel, Field
 import uuid
+
+
+# Severity levels for verdict violations
+SeverityLevel = Literal["low", "medium", "high"]
+
+
+class Verdict(BaseModel):
+    """
+    Immutable verdict for an LLM call.
+    
+    DESIGN RULE: Once a verdict is written to a trace, it MUST NEVER
+    be recalculated or modified. This maintains trace as an audit artifact.
+    """
+    status: Literal["pass", "fail"]
+    severity: Optional[SeverityLevel] = None  # None when passing
+    violations: list[str] = []
+    
+    class Config:
+        frozen = True  # Enforce immutability
 
 
 class TraceParameters(BaseModel):
@@ -32,7 +52,7 @@ class TraceMessage(BaseModel):
 
 class TraceRequest(BaseModel):
     """The request portion of a trace."""
-    provider: str = Field(description="openai | local | custom")
+    provider: str = Field(description="openai | local | custom | gemini")
     model: str
     messages: list[TraceMessage]
     parameters: TraceParameters = Field(default_factory=TraceParameters)
@@ -48,7 +68,7 @@ class TraceResponse(BaseModel):
 
 class TraceRuntime(BaseModel):
     """Runtime environment information."""
-    library: str = Field(description="openai | llama_cpp | transformers")
+    library: str = Field(description="openai | llama_cpp | transformers | gemini")
     version: str
 
 
@@ -71,6 +91,16 @@ class Trace(BaseModel):
         default=None,
         description="Additional user-defined metadata"
     )
+    # Phase 8: Verdict (immutable once written)
+    verdict: Optional[Verdict] = Field(
+        default=None,
+        description="Pass/fail verdict with violations. Immutable once set."
+    )
+    # Phase 9: Golden trace support
+    blessed: bool = Field(
+        default=False,
+        description="If true, this trace is a golden reference"
+    )
 
     class Config:
         json_schema_extra = {
@@ -91,6 +121,13 @@ class Trace(BaseModel):
                     "library": "openai",
                     "version": "1.0.0"
                 },
-                "replay_of": None
+                "replay_of": None,
+                "verdict": {
+                    "status": "pass",
+                    "severity": None,
+                    "violations": []
+                },
+                "blessed": False
             }
         }
+
