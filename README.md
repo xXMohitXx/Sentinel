@@ -1,5 +1,9 @@
 # Sentinel prevents LLM regressions from reaching production.
 
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Status: Complete](https://img.shields.io/badge/status-complete-green.svg)](#)
+
 ---
 
 ## The Problem
@@ -43,14 +47,30 @@ Open http://127.0.0.1:8000/ui
 
 ---
 
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| **Trace Capture** | Record every LLM call automatically |
+| **Expectations** | Define PASS/FAIL rules (4 deterministic rules) |
+| **Golden Traces** | Baseline comparisons with hash verification |
+| **CI Integration** | `sentinel check` exits 1 on regression |
+| **Failure-First UI** | See what broke in < 10 seconds |
+
+---
+
 ## Commands
 
 | Command | What it does |
 |---------|--------------|
-| `sentinel bless <id>` | Mark trace as golden baseline |
-| `sentinel check` | Replay all golden traces, exit 1 on failure |
+| `sentinel init` | Initialize config |
+| `sentinel server` | Start API server |
+| `sentinel list` | List traces |
 | `sentinel list --failed` | Show only failed traces |
+| `sentinel show <id>` | Show trace details |
 | `sentinel replay <id>` | Re-run a trace |
+| `sentinel bless <id>` | Mark as golden baseline |
+| `sentinel check` | CI regression check |
 
 ---
 
@@ -93,15 +113,40 @@ Sentinel is infrastructure, not a toy.
 
 ---
 
-## Status
+## Architecture
 
-**Phase 11 of 12 Complete**
+```
+sentinel/
+├── sdk/                  # Python SDK
+│   ├── schema.py         # Trace schema
+│   ├── decorator.py      # @trace, @expect
+│   ├── expectations/     # 4 rules + evaluator
+│   └── adapters/         # OpenAI, Gemini
+├── server/               # FastAPI backend
+├── cli/                  # Command-line interface
+├── ui/                   # Failure-first web UI
+└── tests/                # Unit tests
+```
 
-- ✅ Trace capture (OpenAI, Gemini)
-- ✅ Expectation engine (4 rules)
-- ✅ Golden traces + hash comparison
+---
+
+## Status: ✅ COMPLETE
+
+All 12 phases implemented:
+
+- ✅ SDK with OpenAI & Gemini adapters
+- ✅ FastAPI server with REST API
+- ✅ CLI with all commands
+- ✅ Expectation Engine (4 deterministic rules)
+- ✅ Golden Traces with hash comparison
 - ✅ CI integration (`sentinel check`)
-- ✅ Failure-first UI
+- ✅ Failure-First UI
+
+---
+
+## Contributing
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and contribution guidelines.
 
 ---
 

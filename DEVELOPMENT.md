@@ -1,218 +1,166 @@
 # Development Guide
 
-This guide covers local development setup, testing, and debugging for Sentinel.
+Complete guide for local development, testing, and contributing to Sentinel.
 
 ---
 
-## 🚀 Quick Setup
+## Quick Setup
 
-### Prerequisites
-- Python 3.10+
-- Git
-
-### Installation
 ```bash
-# Clone the repository
+# Clone
 git clone https://github.com/xXMohitXx/Sentinel.git
 cd Sentinel
 
-# Create virtual environment
+# Virtual environment
 python -m venv sentinel
 .\sentinel\Scripts\activate  # Windows
 # source sentinel/bin/activate  # Linux/Mac
 
-# Install dependencies
+# Install
 pip install -r requirements.txt
 ```
 
-### Environment Variables
-```powershell
-# Required for Gemini
-$env:GOOGLE_API_KEY = "your-gemini-api-key"
+## Environment Variables
 
-# Required for OpenAI
-$env:OPENAI_API_KEY = "your-openai-api-key"
+```powershell
+$env:GOOGLE_API_KEY = "your-gemini-key"
+$env:OPENAI_API_KEY = "your-openai-key"  # optional
 ```
 
 ---
 
-## 🏃 Running the Application
+## Running
 
-### Start the Server
+### Start Server
 ```bash
 python -m cli.main server
-# or with auto-reload:
-python -m uvicorn server.main:app --reload
+# UI: http://127.0.0.1:8000/ui
+# API: http://127.0.0.1:8000/docs
 ```
-
-**Endpoints:**
-- UI: http://127.0.0.1:8000/ui
-- API Docs: http://127.0.0.1:8000/docs
-- Health: http://127.0.0.1:8000/health
 
 ### CLI Commands
 ```bash
-python -m cli.main init           # Initialize config
+python -m cli.main init           # Initialize
 python -m cli.main list           # List traces
-python -m cli.main list --failed  # Failed traces only
-python -m cli.main show <id>      # Show trace details
-python -m cli.main replay <id>    # Replay trace
-python -m cli.main bless <id>     # Mark as golden
-python -m cli.main check          # CI regression test
+python -m cli.main list --failed  # Failed only
+python -m cli.main show <id>      # Show trace
+python -m cli.main replay <id>    # Replay
+python -m cli.main bless <id>     # Mark golden
+python -m cli.main check          # CI check
 ```
 
 ---
 
-## 🧪 Testing
+## Testing
 
-### Run All Tests
 ```bash
-pytest tests/ -v
-```
-
-### Run Specific Test File
-```bash
-pytest tests/test_schema.py -v
-pytest tests/test_expectations.py -v
-```
-
-### Run with Coverage
-```bash
-pip install pytest-cov
-pytest tests/ --cov=sdk --cov=server --cov-report=html
+pytest tests/ -v                    # All tests
+pytest tests/test_expectations.py   # Specific
+pytest tests/ --cov=sdk             # Coverage
 ```
 
 ---
 
-## 📁 Project Architecture
+## Project Structure
 
 ```
 sentinel/
-├── sdk/                      # Python SDK
-│   ├── __init__.py           # Public exports
-│   ├── schema.py             # Trace schema (Pydantic)
-│   ├── capture.py            # Core capture logic
-│   ├── decorator.py          # @trace and @expect decorators
-│   ├── adapters/             # LLM Provider Adapters
-│   │   ├── openai.py         # OpenAI adapter
-│   │   ├── gemini.py         # Google Gemini adapter
-│   │   └── llama.py          # Llama.cpp adapter (stub)
-│   └── expectations/         # Expectation Engine (Phase 8)
-│       ├── rules.py          # 4 deterministic rules
-│       └── evaluator.py      # Verdict evaluation
-│
-├── server/                   # FastAPI Backend
-│   ├── main.py               # App entry point
+├── sdk/
+│   ├── schema.py              # Trace schema
+│   ├── decorator.py           # @trace, @expect
+│   ├── capture.py             # Core capture
+│   ├── expectations/
+│   │   ├── rules.py           # 4 rules
+│   │   └── evaluator.py       # Verdict logic
+│   └── adapters/
+│       ├── openai.py
+│       └── gemini.py
+├── server/
+│   ├── main.py                # FastAPI app
 │   ├── routes/
-│   │   ├── traces.py         # CRUD endpoints
-│   │   ├── replay.py         # Replay engine
-│   │   └── chat.py           # OpenAI-compatible endpoint
+│   │   ├── traces.py          # CRUD
+│   │   ├── replay.py          # Replay engine
+│   │   └── chat.py            # OpenAI compat
 │   └── storage/
-│       ├── files.py          # JSON file storage
-│       └── sqlite.py         # SQLite index
-│
-├── cli/                      # Command Line Interface
-│   └── main.py               # All commands
-│
-├── ui/                       # Web UI
-│   ├── index.html            # Main page
-│   └── app.js                # JavaScript logic
-│
-├── examples/                 # Example Scripts
-│   ├── test_gemini_call.py   # Basic Gemini usage
-│   ├── test_expectations.py  # Expectation engine demo
-│   └── ci/                   # CI integration examples
-│
-└── tests/                    # Unit Tests
-    ├── test_schema.py
-    └── test_expectations.py
+│       ├── files.py           # JSON storage
+│       └── sqlite.py          # Index
+├── cli/
+│   └── main.py                # All commands
+├── ui/
+│   ├── index.html             # Failure-first UI
+│   └── app.js                 # Logic
+└── tests/
 ```
 
 ---
 
-## 🔧 Key Design Decisions
-
-### Trace Schema (`sdk/schema.py`)
-- **Single source of truth** for all trace data
-- Pydantic models for validation
-- JSON-serializable for storage
+## Key Design Decisions
 
 ### Verdict Immutability
-- Verdicts computed at trace creation time
-- **Never recalculated** after storage
-- Ensures traces are audit artifacts
+- Verdicts computed at trace creation
+- Never recalculated after storage
+- Traces are audit artifacts
 
-### Storage Strategy
-- **JSON files** as source of truth (`~/.sentinel/traces/`)
-- SQLite index for fast queries
+### Storage
+- JSON files as source of truth (`~/.sentinel/traces/`)
+- SQLite index for queries
 - Date-organized directories
 
-### Expectation Rules
-All rules are **deterministic** (no AI judgment):
-- `must_include` - Substring presence
-- `must_not_include` - Substring absence
-- `max_latency_ms` - Performance threshold
-- `min_tokens` - Minimum length
+### Expectations
+All deterministic (no AI):
+- `must_include` — substring present
+- `must_not_include` — substring absent
+- `max_latency_ms` — performance
+- `min_tokens` — minimum length
 
 ---
 
-## 🐛 Debugging
+## Contributing
 
-### View Trace Files
-```bash
-# Traces stored in:
+### Workflow
+1. Fork the repo
+2. Create branch: `git checkout -b feature/my-feature`
+3. Make changes + add tests
+4. Run tests: `pytest tests/ -v`
+5. Commit: `git commit -m "feat: add feature"`
+6. Push and create PR
+
+### Commit Format
+```
+feat: new feature
+fix: bug fix
+docs: documentation
+refactor: code improvement
+test: add tests
+```
+
+### Areas for Contribution
+| Area | Difficulty |
+|------|------------|
+| Bug fixes | Easy |
+| Documentation | Easy |
+| Tests | Medium |
+| UI improvements | Medium |
+| New adapters | Medium |
+
+---
+
+## Debugging
+
+### Trace Files
+```
 ~/.sentinel/traces/YYYY-MM-DD/<trace_id>.json
 ```
 
 ### Common Issues
-
 | Issue | Solution |
 |-------|----------|
-| API key not found | Set `GOOGLE_API_KEY` or `OPENAI_API_KEY` |
-| Traces not showing | Ensure server is running, refresh UI |
-| Hourglass (⏳) verdict | Trace has no `@expect` decorator |
-| Import errors | Run from project root, activate venv |
-
-### Enable Debug Logging
-```python
-import logging
-logging.basicConfig(level=logging.DEBUG)
-```
+| API key not found | Set environment variable |
+| Traces not showing | Restart server, refresh UI |
+| ⏳ verdict | No `@expect` decorator |
 
 ---
 
-## 📊 Current Development Status
+## Status: ✅ COMPLETE
 
-**Phase 10 of 12 Complete**
-
-| Phase | Feature | Status |
-|-------|---------|--------|
-| 0-7 | MVP (SDK, Server, CLI, UI) | ✅ |
-| 8 | Expectation Engine | ✅ |
-| 9 | Golden Traces | ✅ |
-| 10 | CI Integration | ✅ |
-| 11 | Failure-First UI | 🔲 |
-| 12 | Final Polish | 🔲 |
-
----
-
-## 🤝 Contributing
-
-See [README.md](README.md#-contributing) for contribution guidelines.
-
-### Development Workflow
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/my-feature`
-3. Make changes and add tests
-4. Run tests: `pytest tests/ -v`
-5. Commit: `git commit -m "feat: add my feature"`
-6. Push and create a Pull Request
-
-### Commit Message Format
-```
-feat: add new feature
-fix: resolve bug
-docs: update documentation
-refactor: improve code structure
-test: add tests
-```
+All phases implemented. UI is frozen. Ready for real-world validation.
