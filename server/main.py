@@ -47,6 +47,11 @@ ui_path = Path(__file__).parent.parent / "ui"
 if ui_path.exists():
     app.mount("/ui", StaticFiles(directory=str(ui_path), html=True), name="ui")
 
+# Mount assets folder for logo/favicon
+assets_path = Path(__file__).parent.parent / "assets"
+if assets_path.exists():
+    app.mount("/assets", StaticFiles(directory=str(assets_path)), name="assets")
+
 
 @app.get("/")
 async def root():
