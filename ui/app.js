@@ -1,14 +1,21 @@
 /**
- * Sentinel UI - Professional Trace Inspector
+ * Sentinel UI - Failure-First Inspector (Phase 11)
  * 
- * Handles trace listing, filtering, detail view, and replay.
+ * DESIGN PRINCIPLE: When something breaks, Sentinel explains why faster than a human can.
+ * 
+ * - Opens in FAILED-ONLY mode by default
+ * - Failure summary above everything
+ * - Navigation between failed traces only
+ * - No distractions during damage control
  */
 
 const API_BASE = '/v1';
 let currentTraceId = null;
 let traces = [];
-let currentFilter = 'all';
-let visibleCount = 5; // Pagination: show 5 at a time
+let failedTraces = [];
+let currentFailedIndex = -1;
+let currentFilter = 'failed'; // DEFAULT: Failed-only mode (Phase 11.1)
+let visibleCount = 5;
 const PAGE_SIZE = 5;
 
 /**
@@ -34,13 +41,16 @@ async function loadTraces() {
         const data = await response.json();
 
         traces = data.traces || [];
-        visibleCount = PAGE_SIZE; // Reset pagination on reload
+        failedTraces = traces.filter(t => t.verdict?.status === 'fail');
+        visibleCount = PAGE_SIZE;
 
-        // Update stats
         updateStats();
-
-        // Render list
         renderTraceList();
+
+        // Phase 11.1: Auto-select first failed trace if exists
+        if (failedTraces.length > 0 && currentFilter === 'failed') {
+            selectTrace(failedTraces[0].trace_id);
+        }
     } catch (error) {
         traceList.innerHTML = `
             <div class="empty-state">
@@ -56,13 +66,12 @@ async function loadTraces() {
  * Update header stats
  */
 function updateStats() {
-    document.getElementById('totalTraces').textContent = traces.length;
-
+    const failed = failedTraces.length;
     const passed = traces.filter(t => t.verdict?.status === 'pass').length;
-    const failed = traces.filter(t => t.verdict?.status === 'fail').length;
 
-    document.getElementById('passedTraces').textContent = passed || '-';
-    document.getElementById('failedTraces').textContent = failed || '-';
+    document.getElementById('failedCount').textContent = failed;
+    document.getElementById('passedCount').textContent = passed;
+    document.getElementById('totalCount').textContent = traces.length;
 }
 
 /**
@@ -70,9 +79,8 @@ function updateStats() {
  */
 function setFilter(filter, element) {
     currentFilter = filter;
-    visibleCount = PAGE_SIZE; // Reset pagination when filter changes
+    visibleCount = PAGE_SIZE;
 
-    // Update active tab
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.classList.remove('active');
     });
@@ -81,22 +89,20 @@ function setFilter(filter, element) {
     }
 
     renderTraceList();
+
+    // Auto-select first trace of new filter
+    const filtered = getFilteredTraces();
+    if (filtered.length > 0) {
+        selectTrace(filtered[0].trace_id);
+    }
 }
 
 /**
- * Load more traces (pagination)
- */
-function loadMore() {
-    visibleCount += PAGE_SIZE;
-    renderTraceList();
-}
-
-/**
- * Get filtered traces based on current filter
+ * Get filtered traces
  */
 function getFilteredTraces() {
     if (currentFilter === 'failed') {
-        return traces.filter(t => t.verdict?.status === 'fail');
+        return failedTraces;
     } else if (currentFilter === 'passed') {
         return traces.filter(t => t.verdict?.status === 'pass');
     }
@@ -104,49 +110,59 @@ function getFilteredTraces() {
 }
 
 /**
+ * Load more traces
+ */
+function loadMore() {
+    visibleCount += PAGE_SIZE;
+    renderTraceList();
+}
+
+/**
  * Render the trace list
  */
 function renderTraceList() {
     const traceList = document.getElementById('traceList');
-
-    // Apply filter
     const filteredTraces = getFilteredTraces();
 
-    if (filteredTraces.length === 0) {
-        let emptyIcon = '📋';
-        let emptyTitle = 'No traces yet';
-        let emptyMsg = 'Make some LLM calls to see them here';
-
-        if (currentFilter === 'failed') {
-            emptyIcon = '✅';
-            emptyTitle = 'No failed traces';
-            emptyMsg = 'All traces are passing!';
-        } else if (currentFilter === 'passed') {
-            emptyIcon = '⏳';
-            emptyTitle = 'No passed traces';
-            emptyMsg = 'No traces with passing verdicts yet';
-        }
-
+    // Phase 11.1: Green banner when no failures
+    if (currentFilter === 'failed' && filteredTraces.length === 0) {
         traceList.innerHTML = `
+            <div class="success-banner">
+                <div class="success-icon">✅</div>
+                <h3>No regressions detected</h3>
+                <p>All expectations are passing</p>
+            </div>
+        `;
+        // Clear detail panel
+        document.getElementById('traceDetail').innerHTML = `
             <div class="empty-state">
-                <div class="empty-state-icon">${emptyIcon}</div>
-                <h3>${emptyTitle}</h3>
-                <p>${emptyMsg}</p>
+                <div class="empty-state-icon">🛡️</div>
+                <h3>All clear</h3>
+                <p>No failed traces to inspect</p>
             </div>
         `;
         return;
     }
 
-    // Paginate - show only visibleCount
+    if (filteredTraces.length === 0) {
+        traceList.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3>No traces</h3>
+                <p>No traces match this filter</p>
+            </div>
+        `;
+        return;
+    }
+
     const visibleTraces = filteredTraces.slice(0, visibleCount);
     const hasMore = filteredTraces.length > visibleCount;
 
-    let html = visibleTraces.map(trace => {
+    let html = visibleTraces.map((trace, index) => {
         const time = formatTime(trace.timestamp);
-        const preview = trace.request.messages?.[0]?.content?.substring(0, 60) || 'No message';
+        const preview = trace.request.messages?.[0]?.content?.substring(0, 50) || 'No message';
         const isActive = trace.trace_id === currentTraceId ? 'active' : '';
 
-        // Verdict styling
         let verdictClass = 'pending';
         let verdictIcon = '⏳';
         if (trace.verdict) {
@@ -160,24 +176,20 @@ function renderTraceList() {
         }
 
         return `
-            <div class="trace-item ${isActive} verdict-${verdictClass} fade-in" onclick="selectTrace('${trace.trace_id}')">
+            <div class="trace-item ${isActive} verdict-${verdictClass}" onclick="selectTrace('${trace.trace_id}')">
                 <div class="trace-header">
                     <div class="verdict-badge ${verdictClass}">${verdictIcon}</div>
                     <span class="trace-model">${trace.request.model}</span>
-                    <span class="trace-provider">${trace.request.provider}</span>
                 </div>
                 <div class="trace-preview">${escapeHtml(preview)}...</div>
                 <div class="trace-meta">
-                    <span class="trace-meta-item">⏱ ${trace.response.latency_ms}ms</span>
-                    <span class="trace-meta-item">🕐 ${time}</span>
-                    ${trace.blessed ? '<span class="tag tag-golden">⭐ Golden</span>' : ''}
-                    ${trace.replay_of ? '<span class="tag tag-replay">↩ Replay</span>' : ''}
+                    <span>⏱ ${trace.response.latency_ms}ms</span>
+                    <span>🕐 ${time}</span>
                 </div>
             </div>
         `;
     }).join('');
 
-    // Add "Load More" button if there are more traces
     if (hasMore) {
         const remaining = filteredTraces.length - visibleCount;
         html += `
@@ -191,14 +203,38 @@ function renderTraceList() {
 }
 
 /**
+ * Navigate to previous failed trace (Phase 11.4)
+ */
+function prevFailedTrace() {
+    if (failedTraces.length === 0) return;
+
+    currentFailedIndex = Math.max(0, currentFailedIndex - 1);
+    selectTrace(failedTraces[currentFailedIndex].trace_id);
+}
+
+/**
+ * Navigate to next failed trace (Phase 11.4)
+ */
+function nextFailedTrace() {
+    if (failedTraces.length === 0) return;
+
+    currentFailedIndex = Math.min(failedTraces.length - 1, currentFailedIndex + 1);
+    selectTrace(failedTraces[currentFailedIndex].trace_id);
+}
+
+/**
  * Select and show a trace
  */
 async function selectTrace(traceId) {
     currentTraceId = traceId;
+
+    // Update failed index
+    currentFailedIndex = failedTraces.findIndex(t => t.trace_id === traceId);
+
     const detail = document.getElementById('traceDetail');
     const replayBtn = document.getElementById('replayBtn');
+    const navBtns = document.getElementById('failNav');
 
-    // Update active state in list
     renderTraceList();
 
     detail.innerHTML = `
@@ -213,107 +249,115 @@ async function selectTrace(traceId) {
 
         replayBtn.disabled = false;
 
-        // Build verdict section
-        let verdictHtml = '';
+        // Update navigation buttons
+        if (navBtns) {
+            navBtns.style.display = failedTraces.length > 1 ? 'flex' : 'none';
+            document.getElementById('prevBtn').disabled = currentFailedIndex <= 0;
+            document.getElementById('nextBtn').disabled = currentFailedIndex >= failedTraces.length - 1;
+            document.getElementById('failCounter').textContent =
+                `${currentFailedIndex + 1} / ${failedTraces.length}`;
+        }
+
+        // Build the detail view
+        let html = '';
+
+        // Phase 11.2: FAILURE SUMMARY FIRST (above everything)
         if (trace.verdict) {
             const isPass = trace.verdict.status === 'pass';
-            verdictHtml = `
-                <div class="verdict-banner ${isPass ? 'pass' : 'fail'} fade-in">
-                    <div class="verdict-banner-icon">${isPass ? '✓' : '✕'}</div>
-                    <div class="verdict-banner-text">
-                        <h3>VERDICT: ${isPass ? 'PASSED' : 'FAILED'}</h3>
-                        <p>${isPass ? 'All expectations met' : `Severity: ${trace.verdict.severity?.toUpperCase() || 'UNKNOWN'}`}</p>
-                    </div>
-                </div>
-            `;
+            const severity = trace.verdict.severity?.toUpperCase() || '';
 
-            if (!isPass && trace.verdict.violations?.length > 0) {
-                verdictHtml += `
-                    <div class="violations-list fade-in">
-                        <div class="violations-title">Violations</div>
-                        ${trace.verdict.violations.map(v => `
-                            <div class="violation-item">
-                                <span class="violation-icon">⚠</span>
-                                <span>${escapeHtml(v)}</span>
+            if (!isPass) {
+                // Large failure banner
+                html += `
+                    <div class="failure-banner">
+                        <div class="failure-header">
+                            <div class="failure-icon">❌</div>
+                            <div class="failure-title">
+                                <h2>REGRESSION DETECTED</h2>
+                                <span class="severity severity-${trace.verdict.severity}">${severity}</span>
                             </div>
-                        `).join('')}
+                        </div>
+                        
+                        <div class="violations-section">
+                            <h4>Violations:</h4>
+                            <ul class="violations-list">
+                                ${trace.verdict.violations.map(v => `
+                                    <li><span class="violation-bullet">•</span> ${escapeHtml(v)}</li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                        
+                        ${trace.replay_of ? `
+                            <div class="golden-ref">
+                                <h4>Golden Reference:</h4>
+                                <div class="golden-info">
+                                    <span>Trace ID: ${trace.replay_of.substring(0, 20)}...</span>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+
+                // Phase 11.3: Inline diff for golden mismatches
+                if (trace.replay_of) {
+                    html += await renderDiff(trace);
+                }
+            } else {
+                html += `
+                    <div class="pass-banner">
+                        <div class="pass-icon">✅</div>
+                        <div>
+                            <h3>PASSED</h3>
+                            <p>All expectations met</p>
+                        </div>
                     </div>
                 `;
             }
         }
 
-        detail.innerHTML = `
-            ${verdictHtml}
-            
-            <div class="detail-section fade-in">
-                <h3 class="section-title">Trace Information</h3>
-                <div class="info-grid">
-                    <div class="info-item" style="grid-column: span 2;">
-                        <div class="info-label">Trace ID</div>
-                        <div class="info-value" style="font-size: 12px; word-break: break-all;">${trace.trace_id}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Timestamp</div>
-                        <div class="info-value">${formatTime(trace.timestamp)}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Model</div>
-                        <div class="info-value">${trace.request.model}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Provider</div>
-                        <div class="info-value">${trace.request.provider}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Latency</div>
-                        <div class="info-value ${trace.response.latency_ms > 2000 ? 'error' : 'success'}">${trace.response.latency_ms}ms</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label">Status</div>
-                        <div class="info-value">${trace.blessed ? '⭐ Golden Reference' : 'Standard Trace'}</div>
-                    </div>
+        // Trace details (below the failure summary)
+        html += `
+            <div class="trace-details">
+                <div class="detail-section">
+                    <h4 class="section-title">Request</h4>
+                    <div class="trace-id">ID: ${trace.trace_id}</div>
+                    <div class="model-info">${trace.request.model} (${trace.request.provider})</div>
                 </div>
-            </div>
-            
-            <div class="detail-section fade-in">
-                <h3 class="section-title">Messages</h3>
-                ${trace.request.messages.map(msg => `
-                    <div class="message ${msg.role}">
-                        <div class="message-role">${msg.role}</div>
-                        <div class="message-content">${escapeHtml(msg.content)}</div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div class="detail-section fade-in">
-                <h3 class="section-title">Response</h3>
-                <div class="response-box">${escapeHtml(trace.response.text)}</div>
-            </div>
-            
-            ${trace.response.usage ? `
-                <div class="detail-section fade-in">
-                    <h3 class="section-title">Token Usage</h3>
-                    <div class="info-grid">
-                        ${Object.entries(trace.response.usage).map(([key, value]) => `
-                            <div class="info-item">
-                                <div class="info-label">${key.replace(/_/g, ' ')}</div>
-                                <div class="info-value">${value}</div>
+                
+                <div class="detail-section">
+                    <h4 class="section-title">Prompt</h4>
+                    <div class="prompt-box">
+                        ${trace.request.messages.map(msg => `
+                            <div class="message ${msg.role}">
+                                <span class="role">${msg.role}:</span>
+                                <span class="content">${escapeHtml(msg.content)}</span>
                             </div>
                         `).join('')}
                     </div>
                 </div>
-            ` : ''}
-            
-            ${trace.replay_of ? `
-                <div class="detail-section fade-in">
-                    <h3 class="section-title">Lineage</h3>
-                    <div class="info-item">
-                        <div class="info-label">Replay of</div>
-                        <div class="info-value">${trace.replay_of}</div>
+                
+                <div class="detail-section">
+                    <h4 class="section-title">Response</h4>
+                    <div class="response-box">${escapeHtml(trace.response.text)}</div>
+                </div>
+                
+                <div class="detail-section meta-section">
+                    <div class="meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label">Latency</span>
+                            <span class="meta-value">${trace.response.latency_ms}ms</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Timestamp</span>
+                            <span class="meta-value">${formatTime(trace.timestamp)}</span>
+                        </div>
                     </div>
                 </div>
-            ` : ''}
+            </div>
         `;
+
+        detail.innerHTML = html;
+
     } catch (error) {
         detail.innerHTML = `
             <div class="empty-state">
@@ -326,6 +370,45 @@ async function selectTrace(traceId) {
 }
 
 /**
+ * Render diff between golden and current output (Phase 11.3)
+ */
+async function renderDiff(trace) {
+    try {
+        const goldenResponse = await fetch(`${API_BASE}/traces/${trace.replay_of}`);
+        const goldenTrace = await goldenResponse.json();
+
+        const goldenText = goldenTrace.response.text;
+        const currentText = trace.response.text;
+
+        if (goldenText === currentText) {
+            return ''; // No diff needed
+        }
+
+        return `
+            <div class="diff-section">
+                <h4 class="section-title">What Changed?</h4>
+                <div class="diff-container">
+                    <div class="diff-panel">
+                        <div class="diff-header diff-old">
+                            <span>Expected (Golden)</span>
+                        </div>
+                        <div class="diff-content">${escapeHtml(goldenText)}</div>
+                    </div>
+                    <div class="diff-panel">
+                        <div class="diff-header diff-new">
+                            <span>Actual (Current)</span>
+                        </div>
+                        <div class="diff-content">${escapeHtml(currentText)}</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    } catch {
+        return '';
+    }
+}
+
+/**
  * Replay the current trace
  */
 async function replayTrace() {
@@ -333,7 +416,7 @@ async function replayTrace() {
 
     const replayBtn = document.getElementById('replayBtn');
     replayBtn.disabled = true;
-    replayBtn.innerHTML = '↻ Replaying...';
+    replayBtn.innerHTML = '🔁 Replaying...';
 
     try {
         const response = await fetch(`${API_BASE}/replay/${currentTraceId}`, {
@@ -345,47 +428,31 @@ async function replayTrace() {
         const result = await response.json();
 
         if (response.ok) {
-            // Show success notification
-            showNotification('Replay successful!', 'success');
+            showNotification('Replay complete', 'success');
             loadTraces();
-            selectTrace(result.new_trace_id);
+            setTimeout(() => selectTrace(result.new_trace_id), 500);
         } else {
             showNotification(`Replay failed: ${result.detail}`, 'error');
         }
     } catch (error) {
-        showNotification(`Replay error: ${error.message}`, 'error');
+        showNotification(`Error: ${error.message}`, 'error');
     } finally {
         replayBtn.disabled = false;
-        replayBtn.innerHTML = '↻ Replay';
+        replayBtn.innerHTML = '🔁 Replay';
     }
 }
 
 /**
- * Show notification toast
+ * Show notification
  */
 function showNotification(message, type = 'info') {
-    // Create notification element
     const notification = document.createElement('div');
-    notification.style.cssText = `
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        padding: 16px 24px;
-        border-radius: 8px;
-        font-size: 14px;
-        font-weight: 500;
-        z-index: 1000;
-        animation: fadeIn 0.3s ease-out;
-        ${type === 'success' ? 'background: #22c55e; color: white;' : ''}
-        ${type === 'error' ? 'background: #ef4444; color: white;' : ''}
-        ${type === 'info' ? 'background: #6366f1; color: white;' : ''}
-    `;
+    notification.className = `notification notification-${type}`;
     notification.textContent = message;
     document.body.appendChild(notification);
 
-    // Remove after 3 seconds
     setTimeout(() => {
-        notification.style.animation = 'fadeIn 0.3s ease-out reverse';
+        notification.classList.add('fade-out');
         setTimeout(() => notification.remove(), 300);
     }, 3000);
 }
@@ -398,38 +465,18 @@ function formatTime(timestamp) {
     const now = new Date();
     const diff = now - date;
 
-    // Format options
     const timeOpts = { hour: '2-digit', minute: '2-digit', hour12: true };
-    const dateOpts = { month: 'short', day: 'numeric' };
 
-    // Less than 1 minute
-    if (diff < 60000) {
-        return 'Just now';
-    }
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return date.toLocaleTimeString('en-US', timeOpts);
 
-    // Less than 1 hour
-    if (diff < 3600000) {
-        const mins = Math.floor(diff / 60000);
-        return `${mins}m ago`;
-    }
-
-    // Less than 24 hours - show time
-    if (diff < 86400000) {
-        return date.toLocaleTimeString('en-US', timeOpts);
-    }
-
-    // Less than 7 days - show day + time
-    if (diff < 604800000) {
-        const days = Math.floor(diff / 86400000);
-        return `${days}d ago, ${date.toLocaleTimeString('en-US', timeOpts)}`;
-    }
-
-    // Otherwise show full date
-    return `${date.toLocaleDateString('en-US', dateOpts)}, ${date.toLocaleTimeString('en-US', timeOpts)}`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+        ', ' + date.toLocaleTimeString('en-US', timeOpts);
 }
 
 /**
- * Escape HTML to prevent XSS
+ * Escape HTML
  */
 function escapeHtml(text) {
     if (!text) return '';

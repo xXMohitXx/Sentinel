@@ -4,38 +4,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sentinel - LLM Trace Inspector</title>
+    <title>Sentinel - LLM Regression Inspector</title>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #09090b;
-            --bg-secondary: #18181b;
-            --bg-tertiary: #27272a;
-            --bg-hover: #3f3f46;
+            --bg-primary: #0a0a0b;
+            --bg-secondary: #111113;
+            --bg-tertiary: #1a1a1d;
+            --bg-hover: #252528;
             --text-primary: #fafafa;
             --text-secondary: #a1a1aa;
             --text-muted: #71717a;
             --accent: #6366f1;
-            --accent-hover: #818cf8;
-            --accent-glow: rgba(99, 102, 241, 0.15);
             --success: #22c55e;
-            --success-bg: rgba(34, 197, 94, 0.1);
+            --success-bg: rgba(34, 197, 94, 0.15);
             --warning: #f59e0b;
-            --warning-bg: rgba(245, 158, 11, 0.1);
             --error: #ef4444;
-            --error-bg: rgba(239, 68, 68, 0.1);
+            --error-bg: rgba(239, 68, 68, 0.12);
+            --error-border: rgba(239, 68, 68, 0.4);
             --border: #27272a;
-            --border-hover: #3f3f46;
-            --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            --gradient-2: linear-gradient(135deg, #22c55e 0%, #10b981 100%);
-            --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
-            --radius-sm: 6px;
-            --radius-md: 8px;
-            --radius-lg: 12px;
+            --radius: 8px;
         }
 
         * {
@@ -45,7 +35,7 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Inter', -apple-system, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.5;
@@ -59,89 +49,73 @@
             min-height: 100vh;
         }
 
-        /* Header */
+        /* Header - Minimal (Phase 11.5) */
         .header {
             background: var(--bg-secondary);
             border-bottom: 1px solid var(--border);
-            padding: 0 24px;
-            height: 64px;
+            padding: 12px 24px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            backdrop-filter: blur(12px);
         }
 
         .logo {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
         }
 
         .logo-icon {
-            width: 36px;
-            height: 36px;
-            background: var(--gradient-1);
-            border-radius: var(--radius-md);
+            width: 28px;
+            height: 28px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
-            box-shadow: 0 0 20px var(--accent-glow);
+            font-size: 14px;
         }
 
         .logo-text {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        .logo-badge {
-            font-size: 11px;
-            font-weight: 500;
-            color: var(--accent);
-            background: var(--accent-glow);
-            padding: 2px 8px;
-            border-radius: 20px;
-            margin-left: 8px;
         }
 
         .header-stats {
             display: flex;
-            gap: 32px;
+            gap: 24px;
+            align-items: center;
         }
 
         .stat {
-            text-align: center;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
 
         .stat-value {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            background: var(--gradient-1);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        }
+
+        .stat-value.failed {
+            color: var(--error);
+        }
+
+        .stat-value.passed {
+            color: var(--success);
         }
 
         .stat-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .header-actions {
-            display: flex;
-            gap: 12px;
-        }
-
-        /* Main Content */
+        /* Main */
         .main {
             display: grid;
-            grid-template-columns: 400px 1fr;
+            grid-template-columns: 320px 1fr;
             flex: 1;
             overflow: hidden;
         }
@@ -156,160 +130,107 @@
         }
 
         .sidebar-header {
-            padding: 16px 20px;
+            padding: 12px 16px;
             border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .sidebar-title {
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
         }
 
         .filter-tabs {
             display: flex;
-            gap: 8px;
+            gap: 6px;
         }
 
         .filter-tab {
-            padding: 6px 12px;
+            flex: 1;
+            padding: 8px 12px;
             font-size: 12px;
-            font-weight: 500;
-            border-radius: 20px;
+            font-weight: 600;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.2s;
             border: none;
             background: var(--bg-tertiary);
             color: var(--text-secondary);
+            transition: all 0.15s;
         }
 
         .filter-tab:hover {
             background: var(--bg-hover);
-            color: var(--text-primary);
         }
 
         .filter-tab.active {
-            background: var(--accent);
-            color: white;
-        }
-
-        .filter-tab.failed {
-            background: var(--error-bg);
-            color: var(--error);
-        }
-
-        .filter-tab.failed.active {
             background: var(--error);
             color: white;
         }
 
-        .filter-tab.passed {
-            background: var(--success-bg);
-            color: var(--success);
-        }
-
-        .filter-tab.passed.active {
+        .filter-tab.passed-tab.active {
             background: var(--success);
-            color: white;
         }
 
-        .load-more-btn {
-            width: 100%;
-            padding: 14px;
-            margin-top: 12px;
-            background: var(--bg-tertiary);
-            border: 1px dashed var(--border);
-            border-radius: var(--radius-md);
-            color: var(--text-secondary);
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .load-more-btn:hover {
-            background: var(--bg-hover);
-            border-color: var(--accent);
-            color: var(--accent);
+        .filter-tab.all-tab.active {
+            background: var(--accent);
         }
 
         .trace-list {
             flex: 1;
             overflow-y: auto;
-            padding: 12px;
-        }
-
-        .trace-list::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .trace-list::-webkit-scrollbar-track {
-            background: transparent;
-        }
-
-        .trace-list::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 3px;
+            padding: 8px;
         }
 
         .trace-item {
-            padding: 16px;
-            border-radius: var(--radius-lg);
+            padding: 12px;
+            border-radius: var(--radius);
             cursor: pointer;
-            transition: all 0.2s;
-            margin-bottom: 8px;
-            border: 1px solid transparent;
+            margin-bottom: 6px;
             background: var(--bg-tertiary);
+            border-left: 3px solid transparent;
+            transition: all 0.15s;
         }
 
         .trace-item:hover {
             background: var(--bg-hover);
-            border-color: var(--border-hover);
-            transform: translateX(4px);
         }
 
         .trace-item.active {
-            background: var(--accent-glow);
-            border-color: var(--accent);
+            background: var(--error-bg);
+            border-left-color: var(--error);
+        }
+
+        .trace-item.verdict-pass.active {
+            background: var(--success-bg);
+            border-left-color: var(--success);
         }
 
         .trace-item.verdict-fail {
-            border-left: 3px solid var(--error);
+            border-left-color: var(--error);
         }
 
         .trace-item.verdict-pass {
-            border-left: 3px solid var(--success);
+            border-left-color: var(--success);
         }
 
         .trace-header {
             display: flex;
             align-items: center;
-            gap: 10px;
-            margin-bottom: 8px;
+            gap: 8px;
+            margin-bottom: 6px;
         }
 
         .verdict-badge {
-            width: 24px;
-            height: 24px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        .verdict-badge.pass {
-            background: var(--success-bg);
+            font-size: 10px;
+            font-weight: bold;
         }
 
         .verdict-badge.fail {
-            background: var(--error-bg);
+            background: var(--error);
+        }
+
+        .verdict-badge.pass {
+            background: var(--success);
         }
 
         .verdict-badge.pending {
@@ -318,39 +239,40 @@
 
         .trace-model {
             font-weight: 600;
-            font-size: 14px;
-            color: var(--text-primary);
-        }
-
-        .trace-provider {
-            font-size: 12px;
-            color: var(--text-muted);
-            padding: 2px 8px;
-            background: var(--bg-primary);
-            border-radius: 4px;
-            margin-left: auto;
+            font-size: 13px;
         }
 
         .trace-preview {
-            font-size: 13px;
+            font-size: 12px;
             color: var(--text-secondary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
 
         .trace-meta {
             display: flex;
             gap: 12px;
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
         }
 
-        .trace-meta-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
+        .load-more-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-tertiary);
+            border: 1px dashed var(--border);
+            border-radius: var(--radius);
+            color: var(--text-secondary);
+            font-size: 12px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+
+        .load-more-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
         }
 
         /* Detail Panel */
@@ -361,7 +283,7 @@
         }
 
         .detail-header {
-            padding: 20px 24px;
+            padding: 12px 20px;
             border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
@@ -370,286 +292,358 @@
         }
 
         .detail-title {
-            font-size: 18px;
+            font-size: 14px;
             font-weight: 600;
+            color: var(--text-secondary);
+        }
+
+        .detail-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        /* Failure Navigation (Phase 11.4) */
+        .fail-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fail-nav button {
+            padding: 6px 12px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .fail-nav button:hover:not(:disabled) {
+            background: var(--bg-hover);
+        }
+
+        .fail-nav button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .fail-counter {
+            font-size: 12px;
+            color: var(--text-muted);
+            padding: 0 8px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .detail-content {
             flex: 1;
             overflow-y: auto;
-            padding: 24px;
+            padding: 20px;
         }
 
-        /* Verdict Banner */
-        .verdict-banner {
+        /* Phase 11.2: Failure Banner - FIRST and PROMINENT */
+        .failure-banner {
+            background: var(--error-bg);
+            border: 1px solid var(--error-border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .failure-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .failure-icon {
+            font-size: 40px;
+        }
+
+        .failure-title h2 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--error);
+            margin-bottom: 4px;
+        }
+
+        .severity {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .severity-low {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .severity-medium {
+            background: #fed7aa;
+            color: #c2410c;
+        }
+
+        .severity-high {
+            background: #fecaca;
+            color: #b91c1c;
+        }
+
+        .violations-section {
+            margin-bottom: 16px;
+        }
+
+        .violations-section h4 {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .violations-list {
+            list-style: none;
+        }
+
+        .violations-list li {
+            padding: 8px 12px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 4px;
+            margin-bottom: 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .violation-bullet {
+            color: var(--error);
+            font-weight: bold;
+        }
+
+        .golden-ref {
+            padding-top: 12px;
+            border-top: 1px solid var(--error-border);
+        }
+
+        .golden-ref h4 {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .golden-info {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Pass Banner */
+        .pass-banner {
+            background: var(--success-bg);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: var(--radius);
             padding: 16px 20px;
-            border-radius: var(--radius-lg);
-            margin-bottom: 24px;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 12px;
         }
 
-        .verdict-banner.pass {
-            background: var(--success-bg);
-            border: 1px solid var(--success);
+        .pass-icon {
+            font-size: 28px;
         }
 
-        .verdict-banner.fail {
-            background: var(--error-bg);
-            border: 1px solid var(--error);
+        .pass-banner h3 {
+            color: var(--success);
+            font-size: 18px;
         }
 
-        .verdict-banner-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+        .pass-banner p {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        /* Success Banner (No Failures) */
+        .success-banner {
             display: flex;
+            flex-direction: column;
             align-items: center;
             justify-content: center;
-            font-size: 20px;
+            padding: 60px 20px;
+            text-align: center;
         }
 
-        .verdict-banner.pass .verdict-banner-icon {
-            background: var(--success);
+        .success-banner .success-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
         }
 
-        .verdict-banner.fail .verdict-banner-icon {
-            background: var(--error);
-        }
-
-        .verdict-banner-text h3 {
-            font-size: 16px;
-            font-weight: 600;
-            margin-bottom: 2px;
-        }
-
-        .verdict-banner.pass .verdict-banner-text h3 {
+        .success-banner h3 {
             color: var(--success);
+            font-size: 20px;
+            margin-bottom: 8px;
         }
 
-        .verdict-banner.fail .verdict-banner-text h3 {
-            color: var(--error);
-        }
-
-        .verdict-banner-text p {
-            font-size: 13px;
+        .success-banner p {
             color: var(--text-secondary);
         }
 
-        /* Violations */
-        .violations-list {
-            background: var(--error-bg);
-            border: 1px solid var(--error);
-            border-radius: var(--radius-md);
-            padding: 16px;
-            margin-bottom: 24px;
+        /* Diff Section (Phase 11.3) */
+        .diff-section {
+            margin-bottom: 20px;
         }
 
-        .violations-title {
-            font-size: 13px;
+        .diff-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .diff-panel {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .diff-header {
+            padding: 8px 12px;
+            font-size: 11px;
             font-weight: 600;
-            color: var(--error);
-            margin-bottom: 12px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .violation-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(239, 68, 68, 0.2);
-            font-size: 13px;
-            color: var(--text-primary);
-        }
-
-        .violation-item:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .violation-icon {
+        .diff-header.diff-old {
+            background: rgba(239, 68, 68, 0.2);
             color: var(--error);
-            flex-shrink: 0;
         }
 
-        /* Detail Sections */
+        .diff-header.diff-new {
+            background: rgba(34, 197, 94, 0.2);
+            color: var(--success);
+        }
+
+        .diff-content {
+            padding: 12px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* Trace Details */
+        .trace-details {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
         .detail-section {
-            margin-bottom: 24px;
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-section:last-child {
+            border-bottom: none;
         }
 
         .section-title {
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
             color: var(--text-muted);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            margin-bottom: 10px;
         }
 
-        .section-title::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: var(--border);
+        .trace-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
         }
 
-        .info-grid {
+        .model-info {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .prompt-box,
+        .response-box {
+            background: var(--bg-tertiary);
+            border-radius: 6px;
+            padding: 12px;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .message {
+            margin-bottom: 8px;
+        }
+
+        .message:last-child {
+            margin-bottom: 0;
+        }
+
+        .message .role {
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-right: 8px;
+        }
+
+        .response-box {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+
+        .meta-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 12px;
         }
 
-        .info-item {
+        .meta-item {
             background: var(--bg-tertiary);
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
+            padding: 10px;
+            border-radius: 6px;
         }
 
-        .info-label {
-            font-size: 11px;
+        .meta-label {
+            display: block;
+            font-size: 10px;
             color: var(--text-muted);
             text-transform: uppercase;
             margin-bottom: 4px;
         }
 
-        .info-value {
-            font-size: 14px;
-            font-weight: 500;
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .info-value.success {
-            color: var(--success);
-        }
-
-        .info-value.error {
-            color: var(--error);
-        }
-
-        /* Messages */
-        .message {
-            margin-bottom: 12px;
-            padding: 16px;
-            border-radius: var(--radius-md);
-            background: var(--bg-tertiary);
-        }
-
-        .message.user {
-            border-left: 3px solid var(--accent);
-        }
-
-        .message.assistant {
-            border-left: 3px solid var(--success);
-        }
-
-        .message.system {
-            border-left: 3px solid var(--warning);
-        }
-
-        .message-role {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-        }
-
-        .message-content {
-            font-size: 14px;
-            line-height: 1.6;
-            color: var(--text-primary);
-        }
-
-        /* Response Box */
-        .response-box {
-            background: var(--bg-tertiary);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            font-family: 'JetBrains Mono', monospace;
+        .meta-value {
             font-size: 13px;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        /* Buttons */
-        .btn {
-            padding: 10px 20px;
-            border-radius: var(--radius-md);
-            font-size: 14px;
             font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background: var(--gradient-1);
-            color: white;
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 20px var(--accent-glow);
-        }
-
-        .btn-secondary {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-hover);
-            border-color: var(--border-hover);
-        }
-
-        .btn-danger {
-            background: var(--error-bg);
-            color: var(--error);
-            border: 1px solid var(--error);
-        }
-
-        .btn-danger:hover {
-            background: var(--error);
-            color: white;
-        }
-
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Tags */
-        .tag {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 500;
-        }
-
-        .tag-golden {
-            background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-            color: #000;
-        }
-
-        .tag-replay {
-            background: var(--accent-glow);
-            color: var(--accent);
         }
 
         /* Empty State */
@@ -658,50 +652,39 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100%;
+            padding: 60px 20px;
             text-align: center;
-            padding: 48px;
         }
 
         .empty-state-icon {
-            width: 80px;
-            height: 80px;
-            background: var(--bg-tertiary);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 32px;
-            margin-bottom: 24px;
+            font-size: 40px;
+            margin-bottom: 16px;
         }
 
         .empty-state h3 {
-            font-size: 18px;
-            font-weight: 600;
+            font-size: 16px;
             margin-bottom: 8px;
         }
 
         .empty-state p {
             color: var(--text-secondary);
-            font-size: 14px;
+            font-size: 13px;
         }
 
         /* Loading */
         .loading {
             display: flex;
-            flex-direction: column;
-            align-items: center;
             justify-content: center;
-            padding: 48px;
+            padding: 40px;
         }
 
         .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid var(--border);
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
             border-top-color: var(--accent);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
@@ -710,31 +693,49 @@
             }
         }
 
-        /* Animations */
-        @keyframes fadeIn {
+        /* Notifications */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideIn 0.2s ease-out;
+        }
+
+        .notification-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .notification-error {
+            background: var(--error);
+            color: white;
+        }
+
+        .notification.fade-out {
+            animation: slideOut 0.2s ease-out forwards;
+        }
+
+        @keyframes slideIn {
             from {
+                transform: translateY(20px);
                 opacity: 0;
-                transform: translateY(10px);
             }
 
             to {
-                opacity: 1;
                 transform: translateY(0);
+                opacity: 1;
             }
         }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        /* Responsive */
-        @media (max-width: 1024px) {
-            .main {
-                grid-template-columns: 1fr;
-            }
-
-            .sidebar {
-                display: none;
+        @keyframes slideOut {
+            to {
+                transform: translateY(20px);
+                opacity: 0;
             }
         }
     </style>
@@ -744,39 +745,32 @@
     <div class="app">
         <header class="header">
             <div class="logo">
-                <div class="logo-icon">◉</div>
+                <div class="logo-icon">🛡️</div>
                 <span class="logo-text">Sentinel</span>
-                <span class="logo-badge">v0.2</span>
             </div>
             <div class="header-stats">
                 <div class="stat">
-                    <div class="stat-value" id="totalTraces">-</div>
-                    <div class="stat-label">Total Traces</div>
+                    <span class="stat-value failed" id="failedCount">-</span>
+                    <span class="stat-label">Failed</span>
                 </div>
                 <div class="stat">
-                    <div class="stat-value" id="passedTraces">-</div>
-                    <div class="stat-label">Passed</div>
+                    <span class="stat-value passed" id="passedCount">-</span>
+                    <span class="stat-label">Passed</span>
                 </div>
                 <div class="stat">
-                    <div class="stat-value" id="failedTraces">-</div>
-                    <div class="stat-label">Failed</div>
+                    <span class="stat-value" id="totalCount">-</span>
+                    <span class="stat-label">Total</span>
                 </div>
-            </div>
-            <div class="header-actions">
-                <button class="btn btn-secondary" onclick="loadTraces()">
-                    ↻ Refresh
-                </button>
             </div>
         </header>
 
         <main class="main">
             <aside class="sidebar">
                 <div class="sidebar-header">
-                    <span class="sidebar-title">Traces</span>
                     <div class="filter-tabs">
-                        <button class="filter-tab active" onclick="setFilter('all', this)">All</button>
-                        <button class="filter-tab passed" onclick="setFilter('passed', this)">✅ Passed</button>
-                        <button class="filter-tab failed" onclick="setFilter('failed', this)">❌ Failed</button>
+                        <button class="filter-tab active" onclick="setFilter('failed', this)">❌ Failed</button>
+                        <button class="filter-tab passed-tab" onclick="setFilter('passed', this)">✅ Passed</button>
+                        <button class="filter-tab all-tab" onclick="setFilter('all', this)">All</button>
                     </div>
                 </div>
                 <div class="trace-list" id="traceList">
@@ -788,18 +782,23 @@
 
             <section class="detail-panel">
                 <div class="detail-header">
-                    <h2 class="detail-title">Trace Details</h2>
-                    <div>
+                    <span class="detail-title">Trace Inspector</span>
+                    <div class="detail-actions">
+                        <div class="fail-nav" id="failNav" style="display: none;">
+                            <button id="prevBtn" onclick="prevFailedTrace()">← Prev</button>
+                            <span class="fail-counter" id="failCounter">0 / 0</span>
+                            <button id="nextBtn" onclick="nextFailedTrace()">Next →</button>
+                        </div>
                         <button class="btn btn-primary" id="replayBtn" onclick="replayTrace()" disabled>
-                            ↻ Replay
+                            🔁 Replay
                         </button>
                     </div>
                 </div>
                 <div class="detail-content" id="traceDetail">
                     <div class="empty-state">
-                        <div class="empty-state-icon">📋</div>
+                        <div class="empty-state-icon">🔍</div>
                         <h3>No trace selected</h3>
-                        <p>Select a trace from the list to view details</p>
+                        <p>Select a failed trace to inspect</p>
                     </div>
                 </div>
             </section>
