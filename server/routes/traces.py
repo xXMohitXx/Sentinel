@@ -94,3 +94,69 @@ async def get_trace_lineage(trace_id: str) -> dict:
         "trace_id": trace_id,
         "lineage": [t.model_dump() for t in lineage],
     }
+
+
+# =============================================================================
+# Phase 14: Graph Endpoints
+# =============================================================================
+
+@router.get("/executions")
+async def list_executions() -> dict:
+    """List all unique execution IDs."""
+    executions = storage.list_executions()
+    return {"executions": executions, "count": len(executions)}
+
+
+@router.get("/executions/{execution_id}")
+async def get_execution(execution_id: str) -> dict:
+    """Get all traces for an execution."""
+    traces = storage.get_traces_by_execution(execution_id)
+    
+    if not traces:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    return {
+        "execution_id": execution_id,
+        "traces": [t.model_dump() for t in traces],
+        "count": len(traces),
+    }
+
+
+@router.get("/executions/{execution_id}/graph")
+async def get_execution_graph(execution_id: str) -> dict:
+    """Get the execution graph for a specific execution."""
+    graph = storage.get_execution_graph(execution_id)
+    
+    if graph is None:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    return graph.model_dump()
+
+
+# =============================================================================
+# Phase 18: Performance Analysis Endpoints
+# =============================================================================
+
+@router.get("/executions/{execution_id}/analysis")
+async def analyze_execution(execution_id: str) -> dict:
+    """
+    Phase 18: Complete performance analysis for an execution.
+    
+    Returns:
+    - Critical path (longest latency chain)
+    - Bottleneck nodes
+    - Graph verdict
+    """
+    graph = storage.get_execution_graph(execution_id)
+    
+    if graph is None:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    return {
+        "execution_id": execution_id,
+        "node_count": graph.node_count,
+        "total_latency_ms": graph.total_latency_ms,
+        "critical_path": graph.critical_path(),
+        "bottlenecks": graph.find_bottlenecks(top_n=3),
+        "verdict": graph.compute_verdict().model_dump(),
+    }

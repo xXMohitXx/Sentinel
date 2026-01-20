@@ -299,4 +299,83 @@ class FileStorage:
             if trace.request.model == model and trace.request.provider == provider:
                 return trace
         return None
-
+    
+    # =========================================================================
+    # Phase 14: Graph Storage
+    # =========================================================================
+    
+    def get_traces_by_execution(self, execution_id: str) -> list[Trace]:
+        """
+        Get all traces for a specific execution.
+        
+        Args:
+            execution_id: The execution ID to filter by
+            
+        Returns:
+            List of traces from that execution, sorted by timestamp
+        """
+        all_traces = self.list_traces(limit=10000)
+        matching = [t for t in all_traces if t.execution_id == execution_id]
+        return sorted(matching, key=lambda t: t.timestamp)
+    
+    def get_execution_graph(self, execution_id: str):
+        """
+        Build an ExecutionGraph from traces with given execution_id.
+        
+        Returns:
+            ExecutionGraph instance, or None if no traces found
+        """
+        from sdk.graph import ExecutionGraph
+        
+        traces = self.get_traces_by_execution(execution_id)
+        if not traces:
+            return None
+        
+        return ExecutionGraph.from_traces(traces)
+    
+    def save_graph(self, graph) -> str:
+        """
+        Save an ExecutionGraph to storage.
+        
+        Args:
+            graph: ExecutionGraph instance
+            
+        Returns:
+            Path to saved graph file
+        """
+        graphs_dir = self.base_path / "graphs"
+        graphs_dir.mkdir(exist_ok=True)
+        
+        graph_file = graphs_dir / f"{graph.execution_id}.json"
+        with open(graph_file, "w", encoding="utf-8") as f:
+            json.dump(graph.model_dump(), f, indent=2)
+        
+        return str(graph_file)
+    
+    def load_graph(self, execution_id: str):
+        """
+        Load a saved ExecutionGraph.
+        
+        Returns:
+            ExecutionGraph instance, or None if not found
+        """
+        from sdk.graph import ExecutionGraph
+        
+        graph_file = self.base_path / "graphs" / f"{execution_id}.json"
+        if not graph_file.exists():
+            return None
+        
+        with open(graph_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        return ExecutionGraph(**data)
+    
+    def list_executions(self) -> list[str]:
+        """
+        List all unique execution IDs.
+        
+        Returns:
+            List of execution IDs
+        """
+        all_traces = self.list_traces(limit=10000)
+        return list(set(t.execution_id for t in all_traces))

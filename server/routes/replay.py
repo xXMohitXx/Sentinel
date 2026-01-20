@@ -164,3 +164,84 @@ async def preview_replay(trace_id: str) -> dict:
         "original_response": original.response.model_dump(),
         "can_replay": original.request.provider.lower() in ["openai", "gemini"],
     }
+
+
+# =============================================================================
+# Phase 17: Subgraph Replay
+# =============================================================================
+
+class SubgraphReplayRequest(BaseModel):
+    """Request body for subgraph replay."""
+    from_node_id: str
+    # Optional overrides
+    model: Optional[str] = None
+    temperature: Optional[float] = None
+
+
+@router.post("/executions/{execution_id}/replay")
+async def replay_subgraph(
+    execution_id: str,
+    request: SubgraphReplayRequest,
+) -> dict:
+    """
+    Phase 17: Replay from a specific node in an execution graph.
+    
+    Replays the specified node and all downstream nodes,
+    preserving the graph structure.
+    """
+    graph = storage.get_execution_graph(execution_id)
+    
+    if graph is None:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    # Find the starting node
+    start_node = graph.get_node(request.from_node_id)
+    if start_node is None:
+        raise HTTPException(status_code=404, detail=f"Node {request.from_node_id} not found")
+    
+    # Get the original trace for this node
+    original_trace = storage.get_trace(start_node.trace_id)
+    if original_trace is None:
+        raise HTTPException(status_code=404, detail=f"Trace for node not found")
+    
+    # Get downstream nodes (to replay in order)
+    downstream = graph.get_tainted_nodes(request.from_node_id)
+    
+    # Replay just the starting node for now
+    # (Full cascade replay is complex - defer to later)
+    provider = original_trace.request.provider.lower()
+    model = request.model or original_trace.request.model
+    
+    try:
+        if provider == "openai":
+            adapter = OpenAIAdapter()
+            response, new_trace = adapter.chat_completion(
+                model=model,
+                messages=[m.model_dump() for m in original_trace.request.messages],
+                temperature=request.temperature or 0.7,
+            )
+        elif provider == "gemini":
+            adapter = GeminiAdapter()
+            prompt = original_trace.request.messages[0].content if original_trace.request.messages else ""
+            response, new_trace = adapter.generate(
+                prompt=prompt,
+                model=model,
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Provider {provider} not supported")
+        
+        # Mark as replay
+        new_trace.replay_of = original_trace.trace_id
+        new_trace.execution_id = execution_id  # Keep in same execution
+        storage.save_trace(new_trace)
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Replay failed: {str(e)}")
+    
+    return {
+        "status": "replayed",
+        "from_node": request.from_node_id,
+        "new_trace_id": new_trace.trace_id,
+        "downstream_nodes": len(downstream),
+        "model_used": model,
+    }

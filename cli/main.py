@@ -389,6 +389,58 @@ def cmd_check(args):
     return 1 if failures > 0 else 0
 
 
+def cmd_graph_check(args):
+    """
+    Phase 16: Check graph-level verdicts.
+    
+    Evaluates execution graphs and fails CI if any graph fails.
+    Provides root cause analysis.
+    """
+    from server.storage.files import FileStorage
+    
+    storage = FileStorage()
+    
+    print("\n" + "═" * 60)
+    print("🔍 SENTINEL GRAPH CHECK")
+    print("═" * 60 + "\n")
+    
+    # Get all executions
+    executions = storage.list_executions()
+    
+    if not executions:
+        print("No executions found.")
+        return 0
+    
+    failures = 0
+    passed = 0
+    
+    for exec_id in executions:
+        graph = storage.get_execution_graph(exec_id)
+        if not graph:
+            continue
+        
+        verdict = graph.compute_verdict()
+        
+        if verdict.status == "pass":
+            passed += 1
+            print(f"✅ {exec_id[:20]}... ({graph.node_count} nodes)")
+        else:
+            failures += 1
+            print(f"\n❌ FAILED: {exec_id[:20]}...")
+            print(f"   Root cause: {verdict.root_cause_node[:20] if verdict.root_cause_node else 'unknown'}...")
+            print(f"   Failed nodes: {verdict.failed_count}")
+            print(f"   Tainted nodes: {verdict.tainted_count}")
+            print(f"   Message: {verdict.message}")
+    
+    print("\n" + "═" * 60)
+    if failures == 0:
+        print(f"✅ ALL {passed} EXECUTION(S) PASSED")
+    else:
+        print(f"❌ {failures} EXECUTION(S) FAILED")
+    print("═" * 60)
+    
+    return 1 if failures > 0 else 0
+
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -436,6 +488,9 @@ def main():
     check_parser = subparsers.add_parser("check", help="Replay all golden traces (CI-safe)")
     check_parser.add_argument("--json", "-j", action="store_true", help="Output JSON report")
     
+    # graph-check command - Phase 16 (graph-level CI)
+    graph_check_parser = subparsers.add_parser("graph-check", help="Check execution graphs (CI-safe)")
+    
     args = parser.parse_args()
     
     if args.command is None:
@@ -450,6 +505,7 @@ def main():
         "replay": cmd_replay,
         "bless": cmd_bless,
         "check": cmd_check,
+        "graph-check": cmd_graph_check,
     }
     
     return commands[args.command](args)

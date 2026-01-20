@@ -484,3 +484,189 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// =============================================================================
+// Phase 15: Graph Visualization
+// =============================================================================
+
+let currentView = 'traces'; // 'traces' or 'graph'
+let executions = [];
+let currentGraph = null;
+
+/**
+ * Switch between Traces and Graph views
+ */
+function switchView(view) {
+    currentView = view;
+
+    // Update tabs
+    document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+    document.querySelector(`[data-view="${view}"]`)?.classList.add('active');
+
+    if (view === 'traces') {
+        document.getElementById('tracesView').style.display = 'flex';
+        document.getElementById('graphView').style.display = 'none';
+    } else {
+        document.getElementById('tracesView').style.display = 'none';
+        document.getElementById('graphView').style.display = 'flex';
+        loadExecutions();
+    }
+}
+
+/**
+ * Load all executions
+ */
+async function loadExecutions() {
+    const container = document.getElementById('executionList');
+    container.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    try {
+        const response = await fetch(`${API_BASE}/executions`);
+        const data = await response.json();
+        executions = data.executions || [];
+
+        if (executions.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📊</div>
+                    <h3>No executions yet</h3>
+                    <p>Run code with sentinel.execution() context</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = executions.map(id => `
+            <div class="execution-item" onclick="loadGraph('${id}')">
+                <span class="execution-id">${id.substring(0, 20)}...</span>
+            </div>
+        `).join('');
+
+        // Auto-load first execution
+        loadGraph(executions[0]);
+    } catch (error) {
+        container.innerHTML = `<div class="empty-state"><p>Error: ${error.message}</p></div>`;
+    }
+}
+
+/**
+ * Load and render a specific execution graph
+ */
+async function loadGraph(executionId) {
+    const graphContainer = document.getElementById('graphCanvas');
+    graphContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    try {
+        const response = await fetch(`${API_BASE}/executions/${executionId}/graph`);
+        const graph = await response.json();
+        currentGraph = graph;
+
+        renderGraph(graph);
+    } catch (error) {
+        graphContainer.innerHTML = `<div class="empty-state"><p>Error: ${error.message}</p></div>`;
+    }
+}
+
+/**
+ * Render the execution graph as a visual DAG
+ */
+function renderGraph(graph) {
+    const container = document.getElementById('graphCanvas');
+
+    if (!graph.nodes || graph.nodes.length === 0) {
+        container.innerHTML = '<div class="empty-state"><p>Empty graph</p></div>';
+        return;
+    }
+
+    // Calculate failed nodes and tainted (downstream) nodes
+    const failedNodeIds = new Set(graph.nodes.filter(n => n.verdict_status === 'fail').map(n => n.node_id));
+    const taintedNodeIds = new Set();
+
+    // BFS to find tainted nodes
+    failedNodeIds.forEach(failedId => {
+        graph.edges.forEach(edge => {
+            if (failedNodeIds.has(edge.from_node) || taintedNodeIds.has(edge.from_node)) {
+                taintedNodeIds.add(edge.to_node);
+            }
+        });
+    });
+
+    // Build HTML for nodes
+    let nodesHtml = '<div class="graph-nodes">';
+
+    // Simple vertical layout (topological order)
+    const nodeMap = {};
+    graph.nodes.forEach(n => nodeMap[n.node_id] = n);
+
+    graph.nodes.forEach((node, index) => {
+        let statusClass = 'pending';
+        let statusIcon = '⏳';
+
+        if (node.verdict_status === 'fail') {
+            statusClass = 'fail';
+            statusIcon = '❌';
+        } else if (node.verdict_status === 'pass') {
+            statusClass = 'pass';
+            statusIcon = '✅';
+        }
+
+        // Check if tainted
+        const isTainted = taintedNodeIds.has(node.node_id);
+        const taintedClass = isTainted ? 'tainted' : '';
+
+        nodesHtml += `
+            <div class="graph-node ${statusClass} ${taintedClass}" data-node="${node.node_id}">
+                <div class="node-header">
+                    <span class="node-status">${statusIcon}</span>
+                    <span class="node-label">${escapeHtml(node.label || node.model)}</span>
+                    ${isTainted ? '<span class="taint-badge">⚠️ TAINTED</span>' : ''}
+                </div>
+                <div class="node-meta">
+                    <span class="node-model">${node.model || 'unknown'}</span>
+                    <span class="node-latency">${node.latency_ms}ms</span>
+                </div>
+            </div>
+        `;
+
+        // Add edge arrow if not last node
+        if (index < graph.nodes.length - 1) {
+            nodesHtml += '<div class="graph-edge-arrow">↓</div>';
+        }
+    });
+
+    nodesHtml += '</div>';
+
+    // Graph summary
+    const failCount = failedNodeIds.size;
+    const taintCount = taintedNodeIds.size;
+
+    let summaryHtml = `
+        <div class="graph-summary">
+            <div class="summary-item">
+                <span class="summary-value">${graph.node_count}</span>
+                <span class="summary-label">Nodes</span>
+            </div>
+            <div class="summary-item">
+                <span class="summary-value">${graph.total_latency_ms}ms</span>
+                <span class="summary-label">Total Latency</span>
+            </div>
+            ${failCount > 0 ? `
+                <div class="summary-item fail">
+                    <span class="summary-value">${failCount}</span>
+                    <span class="summary-label">Failed</span>
+                </div>
+                <div class="summary-item tainted">
+                    <span class="summary-value">${taintCount}</span>
+                    <span class="summary-label">Tainted</span>
+                </div>
+            ` : `
+                <div class="summary-item pass">
+                    <span class="summary-value">✅</span>
+                    <span class="summary-label">All Pass</span>
+                </div>
+            `}
+        </div>
+    `;
+
+    container.innerHTML = summaryHtml + nodesHtml;
+}
