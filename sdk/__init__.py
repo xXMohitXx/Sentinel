@@ -8,7 +8,7 @@ from sdk.schema import Trace, TraceRequest, TraceResponse, TraceRuntime, Verdict
 from sdk.decorator import trace, expect
 from sdk.capture import CaptureLayer
 from sdk.context import execution  # Phase 13: Execution context
-from sdk.graph import ExecutionGraph, NodeRole  # Phase 14+19
+from sdk.graph import ExecutionGraph, NodeRole, GraphStage  # Phase 14+19+20
 
 __version__ = "0.3.0"
 __all__ = [

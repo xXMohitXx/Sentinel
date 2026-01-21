@@ -69,6 +69,36 @@ class GraphEdge(BaseModel):
         frozen = True  # Immutable
 
 
+# =============================================================================
+# Phase 20: Hierarchical Graphs
+# =============================================================================
+
+class GraphStage(BaseModel):
+    """
+    A stage groups related nodes together for hierarchical visualization.
+    
+    Stages enable:
+    - Collapsible groups in UI
+    - Zoom: Execution → Stages → Nodes
+    - Readable large graphs
+    """
+    stage_id: str
+    name: str = Field(description="Human-readable stage name")
+    description: str = ""
+    node_ids: list[str] = Field(default_factory=list)
+    
+    # Stage-level aggregates
+    total_latency_ms: int = 0
+    node_count: int = 0
+    has_failure: bool = False
+    
+    # UI state (not persisted, set by client)
+    collapsed: bool = Field(default=True, description="Whether stage is collapsed in UI")
+    
+    class Config:
+        frozen = True
+
+
 class GraphVerdict(BaseModel):
     """
     Phase 16: Graph-level verdict.
@@ -100,6 +130,9 @@ class ExecutionGraph(BaseModel):
     created_at: str = Field(default_factory=lambda: datetime.now().isoformat())
     nodes: list[GraphNode] = Field(default_factory=list)
     edges: list[GraphEdge] = Field(default_factory=list)
+    
+    # Phase 20: Hierarchical stages
+    stages: list[GraphStage] = Field(default_factory=list)
     
     # Graph-level metadata
     root_node_id: Optional[str] = None  # First node in execution
@@ -167,10 +200,14 @@ class ExecutionGraph(BaseModel):
                 if root_node_id is None:
                     root_node_id = trace.node_id
         
+        # Phase 20: Auto-generate stages based on node roles
+        stages = _generate_stages(nodes)
+        
         return cls(
             execution_id=execution_id,
             nodes=nodes,
             edges=edges,
+            stages=stages,
             root_node_id=root_node_id,
             total_latency_ms=total_latency,
             node_count=len(nodes),
@@ -426,3 +463,71 @@ def _infer_semantics(trace, index: int, total: int) -> tuple:
     description = role_desc.get(role, f"LLM call via {provider}")
     
     return role, human_label, description
+
+
+def _generate_stages(nodes: list) -> list:
+    """
+    Phase 20: Auto-generate stages by grouping consecutive nodes with similar roles.
+    
+    This creates a hierarchical view:
+    - Input Processing
+    - LLM Reasoning  
+    - Validation
+    - Output
+    """
+    import uuid
+    
+    if not nodes:
+        return []
+    
+    stages = []
+    current_group = None
+    current_nodes = []
+    
+    # Stage name templates by role
+    stage_names = {
+        NodeRole.INPUT: "Input Processing",
+        NodeRole.TRANSFORM: "Data Transformation",
+        NodeRole.LLM: "LLM Processing",
+        NodeRole.TOOL: "Tool Execution",
+        NodeRole.VALIDATION: "Validation",
+        NodeRole.OUTPUT: "Output Generation",
+    }
+    
+    for node in nodes:
+        role = node.role
+        
+        # Start new group if role changes
+        if current_group != role:
+            if current_nodes:
+                # Finalize previous stage
+                stage = GraphStage(
+                    stage_id=str(uuid.uuid4()),
+                    name=stage_names.get(current_group, "Processing"),
+                    description=f"{len(current_nodes)} node(s)",
+                    node_ids=[n.node_id for n in current_nodes],
+                    total_latency_ms=sum(n.latency_ms for n in current_nodes),
+                    node_count=len(current_nodes),
+                    has_failure=any(n.verdict_status == "fail" for n in current_nodes),
+                )
+                stages.append(stage)
+            
+            current_group = role
+            current_nodes = [node]
+        else:
+            current_nodes.append(node)
+    
+    # Finalize last stage
+    if current_nodes:
+        stage = GraphStage(
+            stage_id=str(uuid.uuid4()),
+            name=stage_names.get(current_group, "Processing"),
+            description=f"{len(current_nodes)} node(s)",
+            node_ids=[n.node_id for n in current_nodes],
+            total_latency_ms=sum(n.latency_ms for n in current_nodes),
+            node_count=len(current_nodes),
+            has_failure=any(n.verdict_status == "fail" for n in current_nodes),
+        )
+        stages.append(stage)
+    
+    return stages

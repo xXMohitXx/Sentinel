@@ -962,6 +962,79 @@
             color: var(--text-muted);
             padding: 4px 0;
         }
+
+        /* Phase 20: Hierarchical Stages */
+        .graph-hierarchy {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding: 20px;
+        }
+
+        .graph-stage {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .graph-stage.has-failure {
+            border-color: var(--error);
+        }
+
+        .stage-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            cursor: pointer;
+            background: var(--bg-tertiary);
+            transition: background 0.2s;
+        }
+
+        .stage-header:hover {
+            background: var(--bg-secondary);
+        }
+
+        .stage-toggle {
+            font-size: 10px;
+            color: var(--text-muted);
+            transition: transform 0.2s;
+        }
+
+        .stage-name {
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .stage-meta {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .stage-failure,
+        .stage-pass {
+            font-size: 14px;
+        }
+
+        .stage-nodes {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+
+        .stage-nodes.collapsed {
+            display: none;
+        }
+
+        .stage-connector {
+            text-align: center;
+            font-size: 16px;
+            color: var(--text-muted);
+            padding: 4px 0;
+        }
     </style>
 </head>
 

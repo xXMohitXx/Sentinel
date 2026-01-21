@@ -608,13 +608,79 @@ function renderGraph(graph) {
         });
     });
 
-    // Build HTML for nodes
-    let nodesHtml = '<div class="graph-nodes">';
+    // Phase 20: Render hierarchical stages
+    let html = '<div class="graph-hierarchy">';
 
-    // Simple vertical layout (topological order)
+    // Build node lookup
     const nodeMap = {};
     graph.nodes.forEach(n => nodeMap[n.node_id] = n);
 
+    // Check if we have stages
+    const hasStages = graph.stages && graph.stages.length > 0;
+
+    if (hasStages) {
+        // Render by stages (hierarchical)
+        graph.stages.forEach((stage, stageIndex) => {
+            const stageNodes = stage.node_ids.map(id => nodeMap[id]).filter(Boolean);
+            const hasFailure = stage.has_failure;
+            const stageClass = hasFailure ? 'has-failure' : '';
+
+            html += `
+                <div class="graph-stage ${stageClass}" data-stage="${stage.stage_id}">
+                    <div class="stage-header" onclick="toggleStage('${stage.stage_id}')">
+                        <span class="stage-toggle">▶</span>
+                        <span class="stage-name">${escapeHtml(stage.name)}</span>
+                        <span class="stage-meta">${stage.node_count} nodes · ${stage.total_latency_ms}ms</span>
+                        ${hasFailure ? '<span class="stage-failure">❌</span>' : '<span class="stage-pass">✅</span>'}
+                    </div>
+                    <div class="stage-nodes collapsed" id="stage-${stage.stage_id}">
+            `;
+
+            // Render nodes in this stage
+            stageNodes.forEach((node, nodeIndex) => {
+                html += renderGraphNode(node, nodeIndex, stageNodes.length, failedNodeIds, taintedNodeIds);
+            });
+
+            html += `
+                    </div>
+                </div>
+            `;
+
+            // Add stage connector
+            if (stageIndex < graph.stages.length - 1) {
+                html += '<div class="stage-connector">↓</div>';
+            }
+        });
+    } else {
+        // Fallback: Flat node list
+        html += '<div class="graph-nodes">';
+        graph.nodes.forEach((node, index) => {
+            html += renderGraphNode(node, index, graph.nodes.length, failedNodeIds, taintedNodeIds);
+        });
+        html += '</div>';
+    }
+
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// Toggle stage collapse/expand
+function toggleStage(stageId) {
+    const stageNodes = document.getElementById(`stage-${stageId}`);
+    const stageEl = stageNodes?.parentElement;
+    const toggle = stageEl?.querySelector('.stage-toggle');
+
+    if (stageNodes.classList.contains('collapsed')) {
+        stageNodes.classList.remove('collapsed');
+        if (toggle) toggle.textContent = '▼';
+    } else {
+        stageNodes.classList.add('collapsed');
+        if (toggle) toggle.textContent = '▶';
+    }
+}
+
+// Render a single graph node
+function renderGraphNode(node, index, total, failedNodeIds, taintedNodeIds) {
     // Role icons for Phase 19
     const roleIcons = {
         'input': '📥',
@@ -625,82 +691,47 @@ function renderGraph(graph) {
         'output': '📤'
     };
 
-    graph.nodes.forEach((node, index) => {
-        let statusClass = 'pending';
-        let statusIcon = '⏳';
+    let statusClass = 'pending';
+    let statusIcon = '⏳';
 
-        if (node.verdict_status === 'fail') {
-            statusClass = 'fail';
-            statusIcon = '❌';
-        } else if (node.verdict_status === 'pass') {
-            statusClass = 'pass';
-            statusIcon = '✅';
-        }
+    if (node.verdict_status === 'fail') {
+        statusClass = 'fail';
+        statusIcon = '❌';
+    } else if (node.verdict_status === 'pass') {
+        statusClass = 'pass';
+        statusIcon = '✅';
+    }
 
-        // Check if tainted
-        const isTainted = taintedNodeIds.has(node.node_id);
-        const taintedClass = isTainted ? 'tainted' : '';
+    // Check if tainted
+    const isTainted = taintedNodeIds.has(node.node_id);
+    const taintedClass = isTainted ? 'tainted' : '';
 
-        // Phase 19: Use semantic labels
-        const role = node.role || 'llm';
-        const roleIcon = roleIcons[role] || '🤖';
-        const displayLabel = node.human_label || node.label || node.model || 'LLM Call';
-        const description = node.description || `${role.toUpperCase()} node`;
+    // Phase 19: Use semantic labels
+    const role = node.role || 'llm';
+    const roleIcon = roleIcons[role] || '🤖';
+    const displayLabel = node.human_label || node.label || node.model || 'LLM Call';
+    const description = node.description || `${role.toUpperCase()} node`;
 
-        nodesHtml += `
-            <div class="graph-node ${statusClass} ${taintedClass}" data-node="${node.node_id}">
-                <div class="node-header">
-                    <span class="node-status">${statusIcon}</span>
-                    <span class="node-role-icon" title="${role.toUpperCase()}">${roleIcon}</span>
-                    <span class="node-label">${escapeHtml(displayLabel)}</span>
-                    ${isTainted ? '<span class="taint-badge">⚠️ TAINTED</span>' : ''}
-                </div>
-                <div class="node-meta">
-                    <span class="node-description">${escapeHtml(description)}</span>
-                    <span class="node-latency">${node.latency_ms}ms</span>
-                </div>
+    let html = `
+        <div class="graph-node ${statusClass} ${taintedClass}" data-node="${node.node_id}">
+            <div class="node-header">
+                <span class="node-status">${statusIcon}</span>
+                <span class="node-role-icon" title="${role.toUpperCase()}">${roleIcon}</span>
+                <span class="node-label">${escapeHtml(displayLabel)}</span>
+                ${isTainted ? '<span class="taint-badge">⚠️ TAINTED</span>' : ''}
             </div>
-        `;
-
-        // Add edge arrow if not last node
-        if (index < graph.nodes.length - 1) {
-            nodesHtml += '<div class="graph-edge-arrow">↓</div>';
-        }
-    });
-
-    nodesHtml += '</div>';
-
-    // Graph summary
-    const failCount = failedNodeIds.size;
-    const taintCount = taintedNodeIds.size;
-
-    let summaryHtml = `
-        <div class="graph-summary">
-            <div class="summary-item">
-                <span class="summary-value">${graph.node_count}</span>
-                <span class="summary-label">Nodes</span>
+            <div class="node-meta">
+                <span class="node-description">${escapeHtml(description)}</span>
+                <span class="node-latency">${node.latency_ms}ms</span>
             </div>
-            <div class="summary-item">
-                <span class="summary-value">${graph.total_latency_ms}ms</span>
-                <span class="summary-label">Total Latency</span>
-            </div>
-            ${failCount > 0 ? `
-                <div class="summary-item fail">
-                    <span class="summary-value">${failCount}</span>
-                    <span class="summary-label">Failed</span>
-                </div>
-                <div class="summary-item tainted">
-                    <span class="summary-value">${taintCount}</span>
-                    <span class="summary-label">Tainted</span>
-                </div>
-            ` : `
-                <div class="summary-item pass">
-                    <span class="summary-value">✅</span>
-                    <span class="summary-label">All Pass</span>
-                </div>
-            `}
         </div>
     `;
 
-    container.innerHTML = summaryHtml + nodesHtml;
+    // Add edge arrow if not last node
+    if (index < total - 1) {
+        html += '<div class="graph-edge-arrow">↓</div>';
+    }
+
+    return html;
 }
+
