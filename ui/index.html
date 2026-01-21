@@ -912,6 +912,29 @@
             background: rgba(245, 158, 11, 0.1);
         }
 
+        /* Phase 21: Time visualization */
+        .graph-node.bottleneck {
+            border-color: var(--latency-color, #ef4444);
+            box-shadow: 0 0 8px var(--latency-color, #ef4444);
+        }
+
+        .bottleneck-badge {
+            padding: 2px 8px;
+            background: #ef4444;
+            color: #fff;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+
+        .node-time-bar {
+            height: 4px;
+            min-width: 10px;
+            border-radius: 2px;
+            margin-top: 8px;
+            transition: width 0.3s ease;
+        }
+
         .node-header {
             display: flex;
             align-items: center;

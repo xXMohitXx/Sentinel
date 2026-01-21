@@ -608,6 +608,10 @@ function renderGraph(graph) {
         });
     });
 
+    // Phase 21: Calculate max latency for time scaling
+    const maxLatency = Math.max(...graph.nodes.map(n => n.latency_ms), 1);
+    const totalLatency = graph.total_latency_ms || 1;
+
     // Phase 20: Render hierarchical stages
     let html = '<div class="graph-hierarchy">';
 
@@ -638,7 +642,7 @@ function renderGraph(graph) {
 
             // Render nodes in this stage
             stageNodes.forEach((node, nodeIndex) => {
-                html += renderGraphNode(node, nodeIndex, stageNodes.length, failedNodeIds, taintedNodeIds);
+                html += renderGraphNode(node, nodeIndex, stageNodes.length, failedNodeIds, taintedNodeIds, maxLatency);
             });
 
             html += `
@@ -655,7 +659,7 @@ function renderGraph(graph) {
         // Fallback: Flat node list
         html += '<div class="graph-nodes">';
         graph.nodes.forEach((node, index) => {
-            html += renderGraphNode(node, index, graph.nodes.length, failedNodeIds, taintedNodeIds);
+            html += renderGraphNode(node, index, graph.nodes.length, failedNodeIds, taintedNodeIds, maxLatency);
         });
         html += '</div>';
     }
@@ -680,7 +684,7 @@ function toggleStage(stageId) {
 }
 
 // Render a single graph node
-function renderGraphNode(node, index, total, failedNodeIds, taintedNodeIds) {
+function renderGraphNode(node, index, total, failedNodeIds, taintedNodeIds, maxLatency = 1000) {
     // Role icons for Phase 19
     const roleIcons = {
         'input': '📥',
@@ -712,18 +716,34 @@ function renderGraphNode(node, index, total, failedNodeIds, taintedNodeIds) {
     const displayLabel = node.human_label || node.label || node.model || 'LLM Call';
     const description = node.description || `${role.toUpperCase()} node`;
 
+    // Phase 21: Time visualization
+    // Calculate width percentage based on latency (min 50%, max 100%)
+    const latencyRatio = node.latency_ms / maxLatency;
+    const widthPercent = 50 + (latencyRatio * 50); // 50% to 100%
+
+    // Heatmap color based on latency (green -> yellow -> red)
+    const heatmapColor = getLatencyHeatmapColor(latencyRatio);
+
+    // Is this on critical path? (top 30% latency = bottleneck)
+    const isBottleneck = latencyRatio > 0.7;
+    const bottleneckClass = isBottleneck ? 'bottleneck' : '';
+
     let html = `
-        <div class="graph-node ${statusClass} ${taintedClass}" data-node="${node.node_id}">
+        <div class="graph-node ${statusClass} ${taintedClass} ${bottleneckClass}" 
+             data-node="${node.node_id}" 
+             style="width: ${widthPercent}%; --latency-color: ${heatmapColor};">
             <div class="node-header">
                 <span class="node-status">${statusIcon}</span>
                 <span class="node-role-icon" title="${role.toUpperCase()}">${roleIcon}</span>
                 <span class="node-label">${escapeHtml(displayLabel)}</span>
                 ${isTainted ? '<span class="taint-badge">⚠️ TAINTED</span>' : ''}
+                ${isBottleneck ? '<span class="bottleneck-badge">🔥 SLOW</span>' : ''}
             </div>
             <div class="node-meta">
                 <span class="node-description">${escapeHtml(description)}</span>
                 <span class="node-latency">${node.latency_ms}ms</span>
             </div>
+            <div class="node-time-bar" style="width: ${latencyRatio * 100}%; background: ${heatmapColor};"></div>
         </div>
     `;
 
@@ -735,3 +755,17 @@ function renderGraphNode(node, index, total, failedNodeIds, taintedNodeIds) {
     return html;
 }
 
+// Phase 21: Get heatmap color based on latency ratio
+function getLatencyHeatmapColor(ratio) {
+    // Green (fast) -> Yellow (medium) -> Red (slow)
+    if (ratio < 0.3) {
+        // Green: #10b981
+        return '#10b981';
+    } else if (ratio < 0.6) {
+        // Yellow: #f59e0b
+        return '#f59e0b';
+    } else {
+        // Red: #ef4444
+        return '#ef4444';
+    }
+}
