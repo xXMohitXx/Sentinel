@@ -6,7 +6,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Status: Complete](https://img.shields.io/badge/status-complete-green.svg)](#)
+[![SDK: v0.5.0](https://img.shields.io/badge/SDK-v0.5.0-green.svg)](#)
 
 ---
 
@@ -19,11 +19,16 @@ Without Sentinel, you discover this **in production**.
 
 ```python
 from sdk.decorator import trace, expect
+from sdk.context import execution
 
 @trace(provider="gemini")
 @expect(must_include=["refund"], max_latency_ms=1500)
 def customer_reply(query):
     return llm.generate(query)
+
+# Track multi-step agent flows
+with execution("customer-support-flow"):
+    result = customer_reply("I want a refund")
 ```
 
 ```bash
@@ -32,6 +37,9 @@ sentinel bless <trace_id>
 
 # In CI: fail if output regresses
 sentinel check  # exits 1 on failure
+
+# Analyze execution graphs
+sentinel graph-check <execution_id>
 ```
 
 That's it. Your CI now blocks LLM regressions.
@@ -60,6 +68,9 @@ Open http://127.0.0.1:8000/ui
 | **Golden Traces** | Baseline comparisons with hash verification |
 | **CI Integration** | `sentinel check` exits 1 on regression |
 | **Failure-First UI** | See what broke in < 10 seconds |
+| **Execution Graphs** | Visualize multi-step agent workflows |
+| **Forensics Mode** | Debug failures with guided investigation |
+| **Enterprise Hardening** | Integrity hashing, snapshots, exports |
 
 ---
 
@@ -75,6 +86,28 @@ Open http://127.0.0.1:8000/ui
 | `sentinel replay <id>` | Re-run a trace |
 | `sentinel bless <id>` | Mark as golden baseline |
 | `sentinel check` | CI regression check |
+| `sentinel graph-check <id>` | CI graph verdict check |
+
+---
+
+## Execution Graphs (New!)
+
+Track multi-step LLM workflows with causality:
+
+```python
+from sdk.context import execution
+
+with execution("my-agent"):
+    step1 = call_llm("First step")
+    step2 = call_llm("Second step")  # Tracks parent-child
+```
+
+**Graph Features:**
+- 📊 DAG visualization with stages
+- 🔬 Forensics mode for debugging
+- ⏱️ Time-scaled nodes by latency
+- 🔍 Investigation paths
+- 🔒 Enterprise: integrity hashing, exports
 
 ---
 
@@ -121,9 +154,11 @@ Sentinel is infrastructure, not a toy.
 
 ```
 sentinel/
-├── sdk/                  # Python SDK
+├── sdk/                  # Python SDK (v0.5.0)
 │   ├── schema.py         # Trace schema
 │   ├── decorator.py      # @trace, @expect
+│   ├── context.py        # Execution context
+│   ├── graph.py          # Graph models (Phase 14+)
 │   ├── expectations/     # 4 rules + evaluator
 │   └── adapters/         # OpenAI, Gemini
 ├── server/               # FastAPI backend
@@ -134,9 +169,9 @@ sentinel/
 
 ---
 
-## Status: ✅ COMPLETE
+## Status: ✅ COMPLETE (v0.5.0)
 
-All 12 phases implemented:
+All 25 phases implemented:
 
 - ✅ SDK with OpenAI & Gemini adapters
 - ✅ FastAPI server with REST API
@@ -145,6 +180,10 @@ All 12 phases implemented:
 - ✅ Golden Traces with hash comparison
 - ✅ CI integration (`sentinel check`)
 - ✅ Failure-First UI
+- ✅ Execution Graphs & DAG visualization
+- ✅ Semantic Nodes & Hierarchical Stages
+- ✅ Forensics Mode & Investigation Paths
+- ✅ Enterprise Hardening (integrity, export)
 
 ---
 

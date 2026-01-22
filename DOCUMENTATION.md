@@ -10,9 +10,10 @@ Sentinel prevents LLM regressions from reaching production by:
 1. **Recording** every LLM call
 2. **Evaluating** expectations (PASS/FAIL)
 3. **Comparing** against golden baselines
-4. **Failing CI** when outputs regress
+4. **Visualizing** execution graphs
+5. **Failing CI** when outputs regress
 
-### Status: ✅ COMPLETE
+### Status: ✅ COMPLETE (v0.5.0)
 
 All features implemented and ready for production use.
 
@@ -23,6 +24,7 @@ All features implemented and ready for production use.
 ### Installation
 ```python
 from sdk.decorator import trace, expect
+from sdk.context import execution
 from sdk.adapters.gemini import GeminiAdapter
 from sdk.adapters.openai import OpenAIAdapter
 ```
@@ -46,6 +48,16 @@ def my_function(prompt):
 )
 def customer_support(query):
     return llm.generate(query)
+```
+
+### Execution Context (Phase 13)
+```python
+from sdk.context import execution
+
+# Track multi-step workflows
+with execution("my-agent-flow"):
+    step1 = call_llm("First step")
+    step2 = call_llm("Second step")  # Automatically linked
 ```
 
 ### Adapters
@@ -89,17 +101,36 @@ class Verdict:
     violations: list[str]
 ```
 
-### Programmatic Usage
-```python
-from sdk.expectations import evaluate
+---
 
-verdict = evaluate(
-    response_text="Paris is the capital",
-    latency_ms=1200,
-    must_include=["paris"],
-    max_latency_ms=2000
-)
-print(verdict.status)  # "pass"
+## Execution Graphs (Phase 14-25)
+
+### Graph Features
+
+| Phase | Feature | Description |
+|-------|---------|-------------|
+| 14 | Graph Construction | DAG from traces |
+| 16 | Graph Verdict | Root cause detection |
+| 18 | Performance Analysis | Critical path, bottlenecks |
+| 19 | Semantic Nodes | Role labels (INPUT, LLM, VALIDATION...) |
+| 20 | Hierarchical Stages | Collapsible groups |
+| 21 | Time Visualization | Latency heatmap |
+| 22 | Forensics Mode | Debug focus mode |
+| 23 | Graph Diffs | Compare executions |
+| 24 | Investigation Paths | Guided debugging |
+| 25 | Enterprise | Integrity, snapshots, exports |
+
+### Building Graphs
+```python
+from sdk.graph import ExecutionGraph
+
+# Get graph for an execution
+graph = ExecutionGraph.from_traces(traces)
+
+# Analyze
+verdict = graph.compute_verdict()
+path = graph.investigation_path()
+snapshot = graph.to_snapshot()
 ```
 
 ---
@@ -133,6 +164,7 @@ sentinel bless <trace_id> --force  # Override existing
 | `sentinel replay <id>` | Re-run trace |
 | `sentinel bless <id>` | Mark golden |
 | `sentinel check` | CI check (exits 1 on fail) |
+| `sentinel graph-check <id>` | CI graph verdict check |
 
 ---
 
@@ -147,6 +179,19 @@ Base: `http://127.0.0.1:8000`
 | GET | `/v1/traces/{id}` | Get |
 | POST | `/v1/traces` | Create |
 | DELETE | `/v1/traces/{id}` | Delete |
+
+### Executions & Graphs (Phase 14+)
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/v1/executions` | List executions |
+| GET | `/v1/executions/{id}` | Get execution traces |
+| GET | `/v1/executions/{id}/graph` | Get DAG |
+| GET | `/v1/executions/{id}/analysis` | Performance analysis |
+| GET | `/v1/executions/{a}/diff/{b}` | Compare graphs |
+| GET | `/v1/executions/{id}/investigate` | Debug guidance |
+| GET | `/v1/executions/{id}/snapshot` | Immutable snapshot |
+| GET | `/v1/executions/{id}/export` | Export artifact |
+| GET | `/v1/executions/{id}/verify` | Verify integrity |
 
 ### Replay
 | Method | Endpoint | Description |
@@ -184,17 +229,9 @@ Base: `http://127.0.0.1:8000`
     GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 ```
 
-### Pytest
-```python
-import subprocess
-import sys
-
-def test_sentinel():
-    result = subprocess.run(
-        [sys.executable, "-m", "cli.main", "check"],
-        capture_output=True
-    )
-    assert result.returncode == 0
+### Graph-Level CI
+```yaml
+- run: python -m cli.main graph-check ${{ env.EXECUTION_ID }}
 ```
 
 ---
@@ -214,6 +251,9 @@ def test_sentinel():
 ```python
 class Trace:
     trace_id: str           # UUID
+    execution_id: str       # Execution context
+    node_id: str            # Graph node ID
+    parent_node_id: str     # Parent in DAG
     timestamp: str          # ISO-8601
     request: TraceRequest   # Input
     response: TraceResponse # Output
@@ -234,6 +274,12 @@ The UI opens in **failed-only mode** by default:
 - Prev/Next navigation between failures
 - Inline diff for golden mismatches
 - No distractions during damage control
+
+### Graph Tab
+- 📊 Execution DAG visualization
+- 🔬 Forensics Mode toggle
+- ⏱️ Time-scaled nodes
+- Collapsible stages
 
 ---
 
