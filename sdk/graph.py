@@ -584,7 +584,7 @@ class ExecutionGraph(BaseModel):
                     })
         
         # Step 3: Find any validation nodes
-        validation_nodes = [n for n in self.nodes if n.role.value == "validation" if hasattr(n.role, 'value') else str(n.role) == "validation"]
+        validation_nodes = [n for n in self.nodes if (n.role.value if hasattr(n.role, 'value') else str(n.role)) == "validation"]
         if validation_nodes:
             vn = validation_nodes[0]
             steps.append({
