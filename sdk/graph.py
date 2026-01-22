@@ -181,6 +181,16 @@ class ExecutionGraph(BaseModel):
     # Phase 16: Graph verdict
     verdict: Optional[GraphVerdict] = None
     
+    # Phase 25: Enterprise hardening
+    integrity_hash: Optional[str] = Field(
+        default=None,
+        description="SHA256 hash for integrity verification"
+    )
+    snapshot_at: Optional[str] = Field(
+        default=None,
+        description="Timestamp when this snapshot was taken"
+    )
+    
     class Config:
         frozen = True  # Immutable
     
@@ -599,6 +609,95 @@ class ExecutionGraph(BaseModel):
                 })
         
         return steps
+    
+    # =========================================================================
+    # Phase 25: Enterprise Hardening
+    # =========================================================================
+    
+    def compute_hash(self) -> str:
+        """
+        Compute SHA256 hash of the graph for integrity verification.
+        
+        The hash covers all immutable content:
+        - execution_id, nodes, edges, stages
+        - Excludes: snapshot_at, integrity_hash (circular)
+        """
+        import hashlib
+        import json
+        
+        # Build canonical JSON representation
+        canonical = {
+            "execution_id": self.execution_id,
+            "created_at": self.created_at,
+            "nodes": [n.model_dump() for n in self.nodes],
+            "edges": [e.model_dump() for e in self.edges],
+            "root_node_id": self.root_node_id,
+            "total_latency_ms": self.total_latency_ms,
+            "node_count": self.node_count,
+        }
+        
+        # Sort keys for deterministic output
+        content = json.dumps(canonical, sort_keys=True, default=str)
+        
+        return hashlib.sha256(content.encode()).hexdigest()
+    
+    def to_snapshot(self) -> "ExecutionGraph":
+        """
+        Create an immutable snapshot with integrity hash and timestamp.
+        
+        Returns a new ExecutionGraph with:
+        - integrity_hash set
+        - snapshot_at timestamp
+        """
+        from datetime import datetime
+        
+        # Compute hash before snapshot
+        hash_value = self.compute_hash()
+        
+        # Create new snapshot (Pydantic frozen models are immutable)
+        return ExecutionGraph(
+            execution_id=self.execution_id,
+            created_at=self.created_at,
+            nodes=self.nodes,
+            edges=self.edges,
+            stages=self.stages,
+            root_node_id=self.root_node_id,
+            total_latency_ms=self.total_latency_ms,
+            node_count=self.node_count,
+            verdict=self.verdict,
+            integrity_hash=hash_value,
+            snapshot_at=datetime.now().isoformat(),
+        )
+    
+    def export_json(self, pretty: bool = True) -> str:
+        """
+        Export graph as JSON artifact for auditing.
+        
+        Args:
+            pretty: If True, format with indentation
+            
+        Returns:
+            JSON string representation
+        """
+        import json
+        
+        data = self.model_dump()
+        
+        if pretty:
+            return json.dumps(data, indent=2, default=str)
+        return json.dumps(data, default=str)
+    
+    def verify_integrity(self) -> bool:
+        """
+        Verify that the graph has not been tampered with.
+        
+        Returns:
+            True if integrity_hash matches computed hash
+        """
+        if not self.integrity_hash:
+            return False
+        
+        return self.compute_hash() == self.integrity_hash
 
 
 def _get_label(trace) -> str:

@@ -217,3 +217,84 @@ async def get_investigation_path(execution_id: str) -> dict:
         "verdict": verdict.status,
         "steps": steps,
     }
+
+
+# =============================================================================
+# Phase 25: Enterprise Hardening Endpoints
+# =============================================================================
+
+@router.get("/executions/{execution_id}/snapshot")
+async def create_snapshot(execution_id: str) -> dict:
+    """
+    Phase 25: Create an immutable snapshot with integrity hash.
+    
+    Returns the graph with:
+    - integrity_hash (SHA256)
+    - snapshot_at timestamp
+    """
+    graph = storage.get_execution_graph(execution_id)
+    
+    if graph is None:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    snapshot = graph.to_snapshot()
+    
+    return snapshot.model_dump()
+
+
+@router.get("/executions/{execution_id}/export")
+async def export_graph(execution_id: str, format: str = "json") -> dict:
+    """
+    Phase 25: Export graph as artifact for auditing.
+    
+    Args:
+        format: Export format (json only for now)
+        
+    Returns:
+        Graph data with integrity metadata
+    """
+    graph = storage.get_execution_graph(execution_id)
+    
+    if graph is None:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    snapshot = graph.to_snapshot()
+    
+    return {
+        "execution_id": execution_id,
+        "format": format,
+        "integrity_hash": snapshot.integrity_hash,
+        "snapshot_at": snapshot.snapshot_at,
+        "data": snapshot.model_dump(),
+    }
+
+
+@router.get("/executions/{execution_id}/verify")
+async def verify_graph(execution_id: str, expected_hash: Optional[str] = None) -> dict:
+    """
+    Phase 25: Verify graph integrity.
+    
+    Args:
+        expected_hash: Optional hash to compare against
+        
+    Returns:
+        Verification result
+    """
+    graph = storage.get_execution_graph(execution_id)
+    
+    if graph is None:
+        raise HTTPException(status_code=404, detail=f"Execution {execution_id} not found")
+    
+    computed_hash = graph.compute_hash()
+    
+    if expected_hash:
+        matches = computed_hash == expected_hash
+    else:
+        matches = graph.verify_integrity() if graph.integrity_hash else None
+    
+    return {
+        "execution_id": execution_id,
+        "computed_hash": computed_hash,
+        "expected_hash": expected_hash or graph.integrity_hash,
+        "verified": matches,
+    }
