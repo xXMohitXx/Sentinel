@@ -1,6 +1,6 @@
 # Development Guide
 
-Complete guide for local development, testing, and contributing to Sentinel.
+Complete guide for local development, testing, and contributing to Sentinel v1.0.
 
 ---
 
@@ -47,7 +47,6 @@ python -m cli.main show <id>      # Show trace
 python -m cli.main replay <id>    # Replay
 python -m cli.main bless <id>     # Mark golden
 python -m cli.main check          # CI check
-python -m cli.main graph-check <id>  # Graph CI check
 ```
 
 ---
@@ -55,12 +54,14 @@ python -m cli.main graph-check <id>  # Graph CI check
 ## Testing
 
 ```bash
-pytest tests/ -v                    # All tests
-pytest tests/test_expectations.py   # Specific
-pytest tests/ --cov=sdk             # Coverage
+# Contract and invariant tests
+python tests/test_contract.py
 
 # Phase 19-25 tests
 python examples/test_phases_19_25.py
+
+# All examples
+python examples/test_graph_features.py
 ```
 
 ---
@@ -70,11 +71,12 @@ python examples/test_phases_19_25.py
 ```
 sentinel/
 ├── sdk/
+│   ├── __init__.py            # Version (1.0.0)
 │   ├── schema.py              # Trace schema
 │   ├── decorator.py           # @trace, @expect
 │   ├── capture.py             # Core capture
-│   ├── context.py             # Execution context (Phase 13)
-│   ├── graph.py               # Graph models (Phase 14-25)
+│   ├── context.py             # Execution context
+│   ├── graph.py               # Graph models
 │   ├── expectations/
 │   │   ├── rules.py           # 4 rules
 │   │   └── evaluator.py       # Verdict logic
@@ -94,15 +96,31 @@ sentinel/
 │   └── main.py                # All commands
 ├── ui/
 │   ├── index.html             # Failure-first UI
-│   └── app.js                 # Logic (Phase 19-25)
-├── examples/
-│   └── test_phases_19_25.py   # Comprehensive tests
-└── tests/
+│   └── app.js                 # Frontend logic
+├── docs/                      # v1.0 Documentation
+│   ├── contract.md            # API guarantees
+│   ├── invariants.md          # Semantic invariants
+│   ├── failure-modes.md       # Error behavior
+│   ├── quickstart.md          # Getting started
+│   ├── mental-model.md        # Conceptual guide
+│   ├── graph-model.md         # Graph visualization
+│   ├── failure-playbook.md    # Debug procedures
+│   ├── versioning.md          # Release policy
+│   └── performance.md         # Scale limits
+├── tests/
+│   └── test_contract.py       # Contract enforcement
+└── examples/
+    └── test_phases_19_25.py   # Comprehensive tests
 ```
 
 ---
 
 ## Key Design Decisions
+
+### API Contract (v1.0)
+- Guaranteed APIs in [docs/contract.md](docs/contract.md)
+- 10 semantic invariants in [docs/invariants.md](docs/invariants.md)
+- Breaking changes require major version bump
 
 ### Verdict Immutability
 - Verdicts computed at trace creation
@@ -121,34 +139,6 @@ All deterministic (no AI):
 - `max_latency_ms` — performance
 - `min_tokens` — minimum length
 
-### Execution Graphs (Phase 14+)
-- DAG built from traces
-- Causality via `parent_node_id`
-- Semantic roles per node
-- Hierarchical stages
-- Immutable after construction
-
----
-
-## Phase Overview
-
-| Phase | Feature | Files |
-|-------|---------|-------|
-| 1-12 | Core SDK, Server, CLI, UI | `sdk/`, `server/`, `cli/`, `ui/` |
-| 13 | Execution Context | `sdk/context.py` |
-| 14 | Graph Construction | `sdk/graph.py` |
-| 15 | Graph UI | `ui/app.js` |
-| 16 | Graph Verdict | `sdk/graph.py` |
-| 17 | Subgraph Replay | `server/routes/traces.py` |
-| 18 | Performance Analysis | `sdk/graph.py` |
-| 19 | Semantic Nodes | `sdk/graph.py`, `ui/app.js` |
-| 20 | Hierarchical Stages | `sdk/graph.py`, `ui/app.js` |
-| 21 | Time Visualization | `ui/app.js`, `ui/index.html` |
-| 22 | Forensics Mode | `ui/app.js`, `ui/index.html` |
-| 23 | Graph Diffs | `sdk/graph.py`, `server/routes/traces.py` |
-| 24 | Investigation Paths | `sdk/graph.py`, `server/routes/traces.py` |
-| 25 | Enterprise Hardening | `sdk/graph.py`, `server/routes/traces.py` |
-
 ---
 
 ## Contributing
@@ -157,7 +147,7 @@ All deterministic (no AI):
 1. Fork the repo
 2. Create branch: `git checkout -b feature/my-feature`
 3. Make changes + add tests
-4. Run tests: `pytest tests/ -v`
+4. Run tests: `python tests/test_contract.py`
 5. Commit: `git commit -m "feat: add feature"`
 6. Push and create PR
 
@@ -178,7 +168,6 @@ test: add tests
 | Tests | Medium |
 | UI improvements | Medium |
 | New adapters | Medium |
-| Graph features | Hard |
 
 ---
 
@@ -196,24 +185,43 @@ test: add tests
 | Traces not showing | Restart server, refresh UI |
 | ⏳ verdict | No `@expect` decorator |
 | Graph empty | Use `execution()` context |
+| UI cached | Hard refresh (Ctrl+Shift+R) |
 
 ---
 
-## API Testing (Phases 19-25)
+## API Testing
 
 ```bash
-# Graph endpoints
-curl http://127.0.0.1:8000/v1/executions
+# Health check
+curl http://127.0.0.1:8000/health
+
+# List traces
+curl http://127.0.0.1:8000/v1/traces
+
+# Get execution graph
 curl http://127.0.0.1:8000/v1/executions/{id}/graph
-curl http://127.0.0.1:8000/v1/executions/{id}/analysis
+
+# Get investigation path
 curl http://127.0.0.1:8000/v1/executions/{id}/investigate
+
+# Create snapshot
 curl http://127.0.0.1:8000/v1/executions/{id}/snapshot
-curl http://127.0.0.1:8000/v1/executions/{id}/verify
-curl http://127.0.0.1:8000/v1/executions/{a}/diff/{b}
 ```
 
 ---
 
-## Status: ✅ COMPLETE (v0.5.0)
+## Release Process
 
-All 25 phases implemented. Ready for production.
+1. Update `sdk/__init__.py` version
+2. Update CHANGELOG.md
+3. Run all tests
+4. Commit and tag: `git tag -a v1.0.x -m "Release"`
+5. Push: `git push --tags`
+
+See [docs/versioning.md](docs/versioning.md) for full policy.
+
+---
+
+## Status: ✅ v1.0.0 STABLE
+
+All 35 phases complete. Ready for production.

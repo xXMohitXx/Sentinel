@@ -1,6 +1,6 @@
 # Sentinel Documentation
 
-Complete technical reference for Sentinel — the LLM regression prevention tool.
+Complete technical reference for Sentinel v1.0 — the LLM regression prevention tool.
 
 ---
 
@@ -13,9 +13,25 @@ Sentinel prevents LLM regressions from reaching production by:
 4. **Visualizing** execution graphs
 5. **Failing CI** when outputs regress
 
-### Status: ✅ COMPLETE (v0.5.0)
+### Status: ✅ v1.0.0 STABLE
 
-All features implemented and ready for production use.
+All features implemented. API contract frozen. Ready for production.
+
+---
+
+## Quick Links
+
+| Document | Purpose |
+|----------|---------|
+| [docs/quickstart.md](docs/quickstart.md) | 10 min to CI failure |
+| [docs/mental-model.md](docs/mental-model.md) | What Sentinel is/isn't |
+| [docs/graph-model.md](docs/graph-model.md) | How to read graphs |
+| [docs/failure-playbook.md](docs/failure-playbook.md) | Debug procedures |
+| [docs/contract.md](docs/contract.md) | API stability guarantees |
+| [docs/invariants.md](docs/invariants.md) | Semantic invariants |
+| [docs/failure-modes.md](docs/failure-modes.md) | Error behavior |
+| [docs/versioning.md](docs/versioning.md) | Release policy |
+| [docs/performance.md](docs/performance.md) | Scale limits |
 
 ---
 
@@ -50,7 +66,7 @@ def customer_support(query):
     return llm.generate(query)
 ```
 
-### Execution Context (Phase 13)
+### Execution Context
 ```python
 from sdk.context import execution
 
@@ -96,38 +112,32 @@ response, trace = adapter.chat_completion(
 ### Verdict Model
 ```python
 class Verdict:
-    status: "pass" | "fail"
+    status: "pass" | "fail"  # Only two values, ever
     severity: "low" | "medium" | "high" | None
     violations: list[str]
 ```
 
 ---
 
-## Execution Graphs (Phase 14-25)
+## Execution Graphs
 
 ### Graph Features
 
-| Phase | Feature | Description |
-|-------|---------|-------------|
-| 14 | Graph Construction | DAG from traces |
-| 16 | Graph Verdict | Root cause detection |
-| 18 | Performance Analysis | Critical path, bottlenecks |
-| 19 | Semantic Nodes | Role labels (INPUT, LLM, VALIDATION...) |
-| 20 | Hierarchical Stages | Collapsible groups |
-| 21 | Time Visualization | Latency heatmap |
-| 22 | Forensics Mode | Debug focus mode |
-| 23 | Graph Diffs | Compare executions |
-| 24 | Investigation Paths | Guided debugging |
-| 25 | Enterprise | Integrity, snapshots, exports |
+| Feature | Description |
+|---------|-------------|
+| DAG Visualization | Nodes and edges with hierarchical stages |
+| Semantic Nodes | Role labels (INPUT, LLM, VALIDATION...) |
+| Time Visualization | Latency heatmap, bottleneck badges |
+| Forensics Mode | Debug focus, root cause highlighting |
+| Graph Diffs | Compare two executions |
+| Investigation Paths | Guided debugging steps |
+| Enterprise | Integrity hashing, snapshots, exports |
 
 ### Building Graphs
 ```python
 from sdk.graph import ExecutionGraph
 
-# Get graph for an execution
 graph = ExecutionGraph.from_traces(traces)
-
-# Analyze
 verdict = graph.compute_verdict()
 path = graph.investigation_path()
 snapshot = graph.to_snapshot()
@@ -164,7 +174,6 @@ sentinel bless <trace_id> --force  # Override existing
 | `sentinel replay <id>` | Re-run trace |
 | `sentinel bless <id>` | Mark golden |
 | `sentinel check` | CI check (exits 1 on fail) |
-| `sentinel graph-check <id>` | CI graph verdict check |
 
 ---
 
@@ -180,16 +189,16 @@ Base: `http://127.0.0.1:8000`
 | POST | `/v1/traces` | Create |
 | DELETE | `/v1/traces/{id}` | Delete |
 
-### Executions & Graphs (Phase 14+)
+### Executions & Graphs
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | GET | `/v1/executions` | List executions |
-| GET | `/v1/executions/{id}` | Get execution traces |
+| GET | `/v1/executions/{id}` | Get traces |
 | GET | `/v1/executions/{id}/graph` | Get DAG |
-| GET | `/v1/executions/{id}/analysis` | Performance analysis |
-| GET | `/v1/executions/{a}/diff/{b}` | Compare graphs |
-| GET | `/v1/executions/{id}/investigate` | Debug guidance |
-| GET | `/v1/executions/{id}/snapshot` | Immutable snapshot |
+| GET | `/v1/executions/{id}/analysis` | Performance |
+| GET | `/v1/executions/{a}/diff/{b}` | Compare |
+| GET | `/v1/executions/{id}/investigate` | Debug path |
+| GET | `/v1/executions/{id}/snapshot` | Immutable copy |
 | GET | `/v1/executions/{id}/export` | Export artifact |
 | GET | `/v1/executions/{id}/verify` | Verify integrity |
 
@@ -229,11 +238,6 @@ Base: `http://127.0.0.1:8000`
     GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
 ```
 
-### Graph-Level CI
-```yaml
-- run: python -m cli.main graph-check ${{ env.EXECUTION_ID }}
-```
-
 ---
 
 ## Environment Variables
@@ -250,36 +254,16 @@ Base: `http://127.0.0.1:8000`
 
 ```python
 class Trace:
-    trace_id: str           # UUID
-    execution_id: str       # Execution context
+    trace_id: str           # UUID, immutable
+    execution_id: str       # Links to execution
     node_id: str            # Graph node ID
     parent_node_id: str     # Parent in DAG
     timestamp: str          # ISO-8601
     request: TraceRequest   # Input
     response: TraceResponse # Output
-    runtime: TraceRuntime   # Environment
     verdict: Verdict | None # PASS/FAIL
     blessed: bool           # Golden?
-    replay_of: str | None   # Parent ID
-    metadata: dict | None   # Custom
 ```
-
----
-
-## Failure-First UI
-
-The UI opens in **failed-only mode** by default:
-
-- ❌ Large failure banner with violations
-- Prev/Next navigation between failures
-- Inline diff for golden mismatches
-- No distractions during damage control
-
-### Graph Tab
-- 📊 Execution DAG visualization
-- 🔬 Forensics Mode toggle
-- ⏱️ Time-scaled nodes
-- Collapsible stages
 
 ---
 
@@ -287,4 +271,5 @@ The UI opens in **failed-only mode** by default:
 
 - [README](README.md)
 - [Development Guide](DEVELOPMENT.md)
+- [Changelog](CHANGELOG.md)
 - [GitHub](https://github.com/xXMohitXx/Sentinel)
