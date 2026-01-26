@@ -10,7 +10,7 @@ from sdk.capture import CaptureLayer
 from sdk.context import execution  # Phase 13: Execution context
 from sdk.graph import ExecutionGraph, NodeRole, GraphStage, GraphDiff, NodeDiff  # Phase 14+
 
-__version__ = "0.5.0"
+__version__ = "1.0.0"
 __all__ = [
     "Trace",
     "TraceRequest",
