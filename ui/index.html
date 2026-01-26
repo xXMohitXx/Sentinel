@@ -1034,6 +1034,74 @@
         }
 
         /* Phase 20: Hierarchical Stages */
+
+        /* Graph Header */
+        .graph-header {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin: 20px 20px 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .graph-header-id {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .graph-header-label {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .graph-header-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            color: var(--accent);
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .graph-header-stats {
+            font-size: 13px;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        /* Execution Item Selection */
+        .execution-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .execution-item:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .execution-item.active {
+            background: var(--accent);
+            color: #000;
+        }
+
+        .execution-item.active .execution-id {
+            color: #000;
+        }
+
+        .execution-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
         .graph-hierarchy {
             display: flex;
             flex-direction: column;

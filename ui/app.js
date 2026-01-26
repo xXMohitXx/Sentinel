@@ -543,8 +543,8 @@ async function loadExecutions() {
         }
 
         container.innerHTML = executions.map(id => `
-            <div class="execution-item" onclick="loadGraph('${id}')">
-                <span class="execution-id">${id.substring(0, 20)}...</span>
+            <div class="execution-item" id="exec-${id}" onclick="loadGraph('${id}')" title="${id}">
+                <span class="execution-id">${id.substring(0, 8)}...${id.substring(id.length - 4)}</span>
             </div>
         `).join('');
 
@@ -561,6 +561,11 @@ async function loadExecutions() {
 async function loadGraph(executionId) {
     const graphContainer = document.getElementById('graphCanvas');
     graphContainer.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+
+    // Update selection in sidebar
+    document.querySelectorAll('.execution-item').forEach(el => el.classList.remove('active'));
+    const selectedItem = document.getElementById(`exec-${executionId}`);
+    if (selectedItem) selectedItem.classList.add('active');
 
     try {
         const response = await fetch(`${API_BASE}/executions/${executionId}/graph`);
@@ -598,6 +603,25 @@ function renderGraph(graph) {
         return;
     }
 
+    // Get verdict for header
+    const verdict = graph.verdict || { status: 'unknown' };
+    const verdictIcon = verdict.status === 'pass' ? '✅' : verdict.status === 'fail' ? '❌' : '⏳';
+
+    // Header showing current execution ID
+    let headerHtml = `
+        <div class="graph-header">
+            <div class="graph-header-id">
+                <span class="graph-header-label">Execution:</span>
+                <span class="graph-header-value" title="${graph.execution_id}">${graph.execution_id}</span>
+            </div>
+            <div class="graph-header-stats">
+                ${verdictIcon} ${verdict.status?.toUpperCase() || 'UNKNOWN'} · 
+                ${graph.node_count || graph.nodes.length} nodes · 
+                ${graph.total_latency_ms}ms
+            </div>
+        </div>
+    `;
+
     // Calculate failed nodes and tainted (downstream) nodes
     const failedNodeIds = new Set(graph.nodes.filter(n => n.verdict_status === 'fail').map(n => n.node_id));
     const taintedNodeIds = new Set();
@@ -616,7 +640,7 @@ function renderGraph(graph) {
     const totalLatency = graph.total_latency_ms || 1;
 
     // Phase 20: Render hierarchical stages
-    let html = '<div class="graph-hierarchy">';
+    let html = headerHtml + '<div class="graph-hierarchy">';
 
     // Build node lookup
     const nodeMap = {};
@@ -635,12 +659,12 @@ function renderGraph(graph) {
             html += `
                 <div class="graph-stage ${stageClass}" data-stage="${stage.stage_id}">
                     <div class="stage-header" onclick="toggleStage('${stage.stage_id}')">
-                        <span class="stage-toggle">▶</span>
+                        <span class="stage-toggle">▼</span>
                         <span class="stage-name">${escapeHtml(stage.name)}</span>
                         <span class="stage-meta">${stage.node_count} nodes · ${stage.total_latency_ms}ms</span>
                         ${hasFailure ? '<span class="stage-failure">❌</span>' : '<span class="stage-pass">✅</span>'}
                     </div>
-                    <div class="stage-nodes collapsed" id="stage-${stage.stage_id}">
+                    <div class="stage-nodes" id="stage-${stage.stage_id}">
             `;
 
             // Render nodes in this stage
