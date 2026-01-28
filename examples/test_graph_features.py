@@ -196,7 +196,7 @@ def main():
         return 1
     
     print("\n" + "█" * 60)
-    print("  SENTINEL PHASE 13-18 GRAPH FEATURES TEST")
+    print("  Phylax PHASE 13-18 GRAPH FEATURES TEST")
     print("█" * 60)
     
     # Run tests

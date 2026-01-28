@@ -61,7 +61,7 @@ def main():
         return 1
     
     print("=" * 60)
-    print("Sentinel Expectation Engine Test")
+    print("Phylax Expectation Engine Test")
     print("=" * 60)
     print()
     

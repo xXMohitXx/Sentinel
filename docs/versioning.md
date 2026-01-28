@@ -1,12 +1,12 @@
-# Sentinel Versioning Policy
+# Phylax Versioning Policy
 
-> **How we version Sentinel releases.**
+> **How we version Phylax releases.**
 
 ---
 
 ## Semantic Versioning
 
-Sentinel follows [Semantic Versioning 2.0.0](https://semver.org/):
+Phylax follows [Semantic Versioning 2.0.0](https://semver.org/):
 
 ```
 MAJOR.MINOR.PATCH
@@ -149,4 +149,4 @@ All releases are documented in `CHANGELOG.md`:
 
 ---
 
-*This policy applies to Sentinel v1.0.0+*
+*This policy applies to Phylax v1.0.0+*

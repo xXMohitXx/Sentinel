@@ -1,4 +1,4 @@
-name: Sentinel CI Check
+name: Phylax CI Check
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  sentinel-check:
+  Phylax-check:
     runs-on: ubuntu-latest
     
     steps:
@@ -23,12 +23,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
       
-      - name: Run Sentinel Check
+      - name: Run Phylax Check
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           python -m cli.main check --json
       
-      # NOTE: sentinel check exits with code 1 if any golden trace fails
+      # NOTE: Phylax check exits with code 1 if any golden trace fails
       # This will fail the CI build if there are regressions

@@ -1,4 +1,4 @@
-# Sentinel Graph Model
+# Phylax Graph Model
 
 > **How to read and debug execution graphs.**
 
@@ -114,7 +114,7 @@ This helps you focus on what matters.
 
 ## Investigation Path
 
-Sentinel suggests a debug path:
+Phylax suggests a debug path:
 
 ```python
 steps = graph.investigation_path()

@@ -1,5 +1,5 @@
 """
-Sentinel Expectations Package
+Phylax Expectations Package
 
 Rule-based expectation system for LLM call validation.
 Provides PASS/FAIL verdicts based on deterministic rules.

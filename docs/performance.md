@@ -1,4 +1,4 @@
-# Sentinel Performance & Scale Bounds
+# Phylax Performance & Scale Bounds
 
 > **v1 states its limits honestly.**
 
@@ -6,7 +6,7 @@
 
 ## Purpose
 
-Enterprise users trust tools that admit limits. This document defines Sentinel's performance characteristics and scale boundaries.
+Enterprise users trust tools that admit limits. This document defines Phylax's performance characteristics and scale boundaries.
 
 ---
 
@@ -76,7 +76,7 @@ Enterprise users trust tools that admit limits. This document defines Sentinel's
 
 ```bash
 # Traces older than 90 days can be archived
-find ~/.sentinel/traces -mtime +90 -delete
+find ~/.Phylax/traces -mtime +90 -delete
 ```
 
 ---
@@ -127,10 +127,10 @@ find ~/.sentinel/traces -mtime +90 -delete
 
 | Command | Expected Time |
 |---------|---------------|
-| `sentinel list` | < 1 s |
-| `sentinel show <id>` | < 1 s |
-| `sentinel check` | < 5 s per golden |
-| `sentinel replay` | Variable (LLM) |
+| `Phylax list` | < 1 s |
+| `Phylax show <id>` | < 1 s |
+| `Phylax check` | < 5 s per golden |
+| `Phylax replay` | Variable (LLM) |
 
 ### UI
 
@@ -156,7 +156,7 @@ find ~/.sentinel/traces -mtime +90 -delete
 
 ### When to Split
 
-Consider multiple Sentinel instances when:
+Consider multiple Phylax instances when:
 - > 100,000 traces total
 - > 10 concurrent users
 - > 10 executions/minute
@@ -178,4 +178,4 @@ Measured on: Intel i7, 16GB RAM, SSD
 ---
 
 *Last updated: 2026-01-26*
-*Measured on: Sentinel v1.0.0*
+*Measured on: Phylax v1.0.0*

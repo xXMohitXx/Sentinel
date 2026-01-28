@@ -1,7 +1,7 @@
 /**
- * Sentinel UI - Failure-First Inspector (Phase 11)
+ * Phylax UI - Failure-First Inspector (Phase 11)
  * 
- * DESIGN PRINCIPLE: When something breaks, Sentinel explains why faster than a human can.
+ * DESIGN PRINCIPLE: When something breaks, Phylax explains why faster than a human can.
  * 
  * - Opens in FAILED-ONLY mode by default
  * - Failure summary above everything
@@ -536,7 +536,7 @@ async function loadExecutions() {
                 <div class="empty-state">
                     <div class="empty-state-icon">📊</div>
                     <h3>No executions yet</h3>
-                    <p>Run code with sentinel.execution() context</p>
+                    <p>Run code with Phylax.execution() context</p>
                 </div>
             `;
             return;
@@ -577,7 +577,7 @@ async function loadGraph(executionId) {
                     <div class="empty-state-icon">📊</div>
                     <h3>Single-node execution</h3>
                     <p>This trace was captured without execution context.</p>
-                    <p class="hint">Use <code>with sentinel.execution():</code> to create graphs.</p>
+                    <p class="hint">Use <code>with Phylax.execution():</code> to create graphs.</p>
                 </div>
             `;
             return;

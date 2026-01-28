@@ -26,11 +26,11 @@ class SQLiteIndex:
         Initialize SQLite index.
         
         Args:
-            db_path: Path to SQLite database. Defaults to ~/.sentinel/index.sqlite
+            db_path: Path to SQLite database. Defaults to ~/.Phylax/index.sqlite
         """
         if db_path is None:
             import os
-            base_path = os.path.expanduser("~/.sentinel")
+            base_path = os.path.expanduser("~/.Phylax")
             Path(base_path).mkdir(parents=True, exist_ok=True)
             db_path = os.path.join(base_path, "index.sqlite")
         

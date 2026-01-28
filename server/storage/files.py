@@ -5,7 +5,7 @@ Design goal: Zero infrastructure.
 JSON files as ground truth, organized by date.
 
 Default layout:
-~/.sentinel/
+~/.Phylax/
   traces/
     2026-01-16/
       trace_x.json
@@ -33,10 +33,10 @@ class FileStorage:
         Initialize file storage.
         
         Args:
-            base_path: Base directory for traces. Defaults to ~/.sentinel
+            base_path: Base directory for traces. Defaults to ~/.Phylax
         """
         if base_path is None:
-            base_path = os.path.expanduser("~/.sentinel")
+            base_path = os.path.expanduser("~/.Phylax")
         
         self.base_path = Path(base_path)
         self.traces_path = self.base_path / "traces"

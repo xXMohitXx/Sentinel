@@ -4,7 +4,7 @@ Test Phase 13: Execution Context and Causality
 Tests for:
 - execution_id grouping
 - node_id and parent_node_id tracking
-- sentinel.execution() context manager
+- Phylax.execution() context manager
 """
 
 import pytest

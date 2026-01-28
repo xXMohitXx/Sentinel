@@ -1,12 +1,12 @@
-# Sentinel Documentation
+# Phylax Documentation
 
-Complete technical reference for Sentinel v1.0 — the LLM regression prevention tool.
+Complete technical reference for Phylax v1.0 — the LLM regression prevention tool.
 
 ---
 
 ## Overview
 
-Sentinel prevents LLM regressions from reaching production by:
+Phylax prevents LLM regressions from reaching production by:
 1. **Recording** every LLM call
 2. **Evaluating** expectations (PASS/FAIL)
 3. **Comparing** against golden baselines
@@ -24,7 +24,7 @@ All features implemented. API contract frozen. Ready for production.
 | Document | Purpose |
 |----------|---------|
 | [docs/quickstart.md](docs/quickstart.md) | 10 min to CI failure |
-| [docs/mental-model.md](docs/mental-model.md) | What Sentinel is/isn't |
+| [docs/mental-model.md](docs/mental-model.md) | What Phylax is/isn't |
 | [docs/graph-model.md](docs/graph-model.md) | How to read graphs |
 | [docs/failure-playbook.md](docs/failure-playbook.md) | Debug procedures |
 | [docs/contract.md](docs/contract.md) | API stability guarantees |
@@ -149,15 +149,15 @@ snapshot = graph.to_snapshot()
 
 ### Bless a Trace
 ```bash
-sentinel bless <trace_id>
-sentinel bless <trace_id> --yes    # Skip confirmation
-sentinel bless <trace_id> --force  # Override existing
+Phylax bless <trace_id>
+Phylax bless <trace_id> --yes    # Skip confirmation
+Phylax bless <trace_id> --force  # Override existing
 ```
 
 ### How It Works
 1. Output is hashed and stored
 2. One golden per model/provider
-3. `sentinel check` compares against golden
+3. `Phylax check` compares against golden
 4. Hash mismatch → FAIL
 
 ---
@@ -166,14 +166,14 @@ sentinel bless <trace_id> --force  # Override existing
 
 | Command | Description |
 |---------|-------------|
-| `sentinel init` | Initialize config |
-| `sentinel server` | Start API server |
-| `sentinel list` | List traces |
-| `sentinel list --failed` | Failed only |
-| `sentinel show <id>` | Show trace |
-| `sentinel replay <id>` | Re-run trace |
-| `sentinel bless <id>` | Mark golden |
-| `sentinel check` | CI check (exits 1 on fail) |
+| `Phylax init` | Initialize config |
+| `Phylax server` | Start API server |
+| `Phylax list` | List traces |
+| `Phylax list --failed` | Failed only |
+| `Phylax show <id>` | Show trace |
+| `Phylax replay <id>` | Re-run trace |
+| `Phylax bless <id>` | Mark golden |
+| `Phylax check` | CI check (exits 1 on fail) |
 
 ---
 
@@ -219,12 +219,12 @@ Base: `http://127.0.0.1:8000`
 ## Storage
 
 ```
-~/.sentinel/
+~/.Phylax/
 ├── config.yaml
 ├── traces/
 │   └── YYYY-MM-DD/
 │       └── <trace_id>.json
-└── sentinel.db  # SQLite index
+└── Phylax.db  # SQLite index
 ```
 
 ---
@@ -246,7 +246,7 @@ Base: `http://127.0.0.1:8000`
 |----------|-------------|
 | `GOOGLE_API_KEY` | Gemini API key |
 | `OPENAI_API_KEY` | OpenAI API key |
-| `SENTINEL_HOME` | Config directory (optional) |
+| `Phylax_HOME` | Config directory (optional) |
 
 ---
 
@@ -272,4 +272,4 @@ class Trace:
 - [README](README.md)
 - [Development Guide](DEVELOPMENT.md)
 - [Changelog](CHANGELOG.md)
-- [GitHub](https://github.com/xXMohitXx/Sentinel)
+- [GitHub](https://github.com/xXMohitXx/Phylax)

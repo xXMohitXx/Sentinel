@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="assets/logo/sentinellogo.png" alt="Sentinel Logo" width="200">
+  <img src="assets/logo/phylaxlogo.png" alt="Phylax Logo" width="200">
 </p>
 
-# Sentinel prevents LLM regressions from reaching production.
+# Phylax prevents LLM regressions from reaching production.
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -14,7 +14,7 @@
 ## The Problem
 
 LLM outputs change unexpectedly. Same prompt, different model version → different behavior.  
-Without Sentinel, you discover this **in production**.
+Without Phylax, you discover this **in production**.
 
 ## The Solution
 
@@ -34,10 +34,10 @@ with execution("customer-support-flow"):
 
 ```bash
 # Mark a known-good response as baseline
-sentinel bless <trace_id>
+phylax bless <trace_id>
 
 # In CI: fail if output regresses
-sentinel check  # exits 1 on failure
+phylax check  # exits 1 on failure
 ```
 
 That's it. Your CI now blocks LLM regressions.
@@ -47,15 +47,15 @@ That's it. Your CI now blocks LLM regressions.
 ## Quick Start
 
 ```bash
-git clone https://github.com/xXMohitXx/Sentinel.git
-cd Sentinel
+git clone https://github.com/xXMohitXx/Phylax.git
+cd Phylax
 pip install -r requirements.txt
 python -m cli.main server
 ```
 
 Open http://127.0.0.1:8000/ui
 
-**New to Sentinel?** See [docs/quickstart.md](docs/quickstart.md) for a 10-minute guide.
+**New to Phylax?** See [docs/quickstart.md](docs/quickstart.md) for a 10-minute guide.
 
 ---
 
@@ -66,7 +66,7 @@ Open http://127.0.0.1:8000/ui
 | **Trace Capture** | Record every LLM call automatically |
 | **Expectations** | Define PASS/FAIL rules (4 deterministic rules) |
 | **Golden Traces** | Baseline comparisons with hash verification |
-| **CI Integration** | `sentinel check` exits 1 on regression |
+| **CI Integration** | `phylax check` exits 1 on regression |
 | **Failure-First UI** | See what broke in < 10 seconds |
 | **Execution Graphs** | Visualize multi-step agent workflows |
 | **Forensics Mode** | Debug failures with guided investigation |
@@ -78,14 +78,14 @@ Open http://127.0.0.1:8000/ui
 
 | Command | What it does |
 |---------|--------------|
-| `sentinel init` | Initialize config |
-| `sentinel server` | Start API server |
-| `sentinel list` | List traces |
-| `sentinel list --failed` | Show only failed traces |
-| `sentinel show <id>` | Show trace details |
-| `sentinel replay <id>` | Re-run a trace |
-| `sentinel bless <id>` | Mark as golden baseline |
-| `sentinel check` | CI regression check |
+| `phylax init` | Initialize config |
+| `phylax server` | Start API server |
+| `phylax list` | List traces |
+| `phylax list --failed` | Show only failed traces |
+| `phylax show <id>` | Show trace details |
+| `phylax replay <id>` | Re-run a trace |
+| `phylax bless <id>` | Mark as golden baseline |
+| `phylax check` | CI regression check |
 
 ---
 
@@ -128,7 +128,7 @@ All rules are deterministic. No AI judgment. No ambiguity.
 ## CI Integration
 
 ```yaml
-# .github/workflows/sentinel.yml
+# .github/workflows/phylax.yml
 - run: python -m cli.main check
   env:
     GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
@@ -141,7 +141,7 @@ Pipeline fails if any golden trace regresses.
 ## Architecture
 
 ```
-sentinel/
+phylax/
 ├── sdk/                  # Python SDK (v1.0.0)
 │   ├── schema.py         # Trace schema
 │   ├── decorator.py      # @trace, @expect
@@ -163,7 +163,7 @@ sentinel/
 | Document | Purpose |
 |----------|---------|
 | [docs/quickstart.md](docs/quickstart.md) | 10 min to CI failure |
-| [docs/mental-model.md](docs/mental-model.md) | What Sentinel is/isn't |
+| [docs/mental-model.md](docs/mental-model.md) | What Phylax is/isn't |
 | [docs/graph-model.md](docs/graph-model.md) | How to read graphs |
 | [docs/failure-playbook.md](docs/failure-playbook.md) | Debug procedures |
 | [docs/contract.md](docs/contract.md) | API stability guarantees |
@@ -180,7 +180,7 @@ All 35 phases complete:
 - ✅ CLI with all commands
 - ✅ Expectation Engine (4 deterministic rules)
 - ✅ Golden Traces with hash comparison
-- ✅ CI integration (`sentinel check`)
+- ✅ CI integration (`phylax check`)
 - ✅ Failure-First UI
 - ✅ Execution Graphs & DAG visualization
 - ✅ Semantic Nodes & Hierarchical Stages
@@ -202,7 +202,7 @@ See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and contribution guidelines.
 - [Documentation](DOCUMENTATION.md)
 - [Development Guide](DEVELOPMENT.md)
 - [Changelog](CHANGELOG.md)
-- [GitHub](https://github.com/xXMohitXx/Sentinel)
+- [GitHub](https://github.com/xXMohitXx/Phylax)
 
 ---
 

@@ -2,7 +2,7 @@
 Test Script - Gemini 2.0 Flash API Call with Trace Capture
 
 This script makes a real API call to Google Gemini and captures the trace.
-The trace will be stored in ~/.sentinel/traces/ and visible in the UI.
+The trace will be stored in ~/.Phylax/traces/ and visible in the UI.
 
 Usage:
     # Set your Google API key first

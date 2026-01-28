@@ -1,16 +1,16 @@
 # Changelog
 
-All notable changes to Sentinel are documented here.
+All notable changes to Phylax are documented here.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
-## [1.0.0] - 2026-01-26
+## [1.0.0] - 2026-01-28
 
 ### 🎉 First Stable Release
 
-Sentinel v1.0.0 marks the first production-ready release with frozen API contracts.
+Phylax v1.0.0 marks the first production-ready release with frozen API contracts.
 
 ### Added
 
@@ -26,7 +26,7 @@ Sentinel v1.0.0 marks the first production-ready release with frozen API contrac
 
 #### Phase 28 — Documentation
 - `docs/quickstart.md` — 10 min to CI failure
-- `docs/mental-model.md` — What Sentinel is/isn't
+- `docs/mental-model.md` — What Phylax is/isn't
 - `docs/graph-model.md` — Execution graph guide
 - `docs/failure-playbook.md` — Debug procedures
 
@@ -38,6 +38,7 @@ Sentinel v1.0.0 marks the first production-ready release with frozen API contrac
 ### Changed
 - SDK version bumped to 1.0.0
 - README updated for v1.0
+- **Renamed from Sentinel to Phylax**
 
 ### Fixed
 - Fixed investigation_path list comprehension syntax
@@ -110,7 +111,7 @@ Sentinel v1.0.0 marks the first production-ready release with frozen API contrac
 - Phase 7-12 core features
 - Expectation engine (4 rules)
 - Golden traces and blessing
-- CI integration (`sentinel check`)
+- CI integration (`phylax check`)
 - Failure-first UI
 
 ---

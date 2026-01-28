@@ -1,25 +1,25 @@
-# Sentinel Mental Model
+# Phylax Mental Model
 
-> **What Sentinel is — and isn't.**
+> **What Phylax is — and isn't.**
 
 ---
 
 ## The One-Liner
 
-**Sentinel is a regression gate for LLM outputs.**
+**Phylax is a regression gate for LLM outputs.**
 
 It answers one question:  
 *"Did my LLM behavior change from what I expected?"*
 
 ---
 
-## What Sentinel IS
+## What Phylax IS
 
 ### 1. An Observer
-Sentinel watches your LLM calls and records them. It never modifies what your code does.
+Phylax watches your LLM calls and records them. It never modifies what your code does.
 
 ### 2. A Judge (with simple rules)
-Sentinel evaluates responses with explicit, deterministic rules:
+Phylax evaluates responses with explicit, deterministic rules:
 - Does output contain "X"?
 - Is latency under Y ms?
 - Is response at least Z tokens?
@@ -27,37 +27,37 @@ Sentinel evaluates responses with explicit, deterministic rules:
 No AI. No fuzzy matching. Just yes/no.
 
 ### 3. A Regression Gate
-Sentinel compares current outputs to "golden" (blessed) baselines:
+Phylax compares current outputs to "golden" (blessed) baselines:
 - Same = pass
 - Different = fail
 
 Your CI blocks the change.
 
 ### 4. A Debugger
-When failures happen, Sentinel shows:
+When failures happen, Phylax shows:
 - What failed
 - Where in the execution chain
 - What the expected vs actual output was
 
 ---
 
-## What Sentinel is NOT
+## What Phylax is NOT
 
 ### ❌ Not an LLM Evaluator
-Sentinel doesn't judge if your output is "good". It judges if it matches expectations.
+Phylax doesn't judge if your output is "good". It judges if it matches expectations.
 
 ### ❌ Not a Prompt Engineering Tool
-Sentinel doesn't help you write prompts. It tells you when prompts break.
+Phylax doesn't help you write prompts. It tells you when prompts break.
 
 ### ❌ Not a Monitoring Dashboard
-Sentinel is for CI, not production monitoring. Use observability tools for that.
+Phylax is for CI, not production monitoring. Use observability tools for that.
 
 ### ❌ Not AI-Powered
-Sentinel uses zero AI to evaluate. Rules are code, not inference.
+Phylax uses zero AI to evaluate. Rules are code, not inference.
 
 ---
 
-## The Sentinel Lifecycle
+## The Phylax Lifecycle
 
 ```
 1. TRACE      → Record LLM call
@@ -91,9 +91,9 @@ Sentinel uses zero AI to evaluate. Rules are code, not inference.
 
 ---
 
-## When to Use Sentinel
+## When to Use Phylax
 
-| Scenario | Use Sentinel? |
+| Scenario | Use Phylax? |
 |----------|---------------|
 | Production LLM app | ✅ Yes |
 | CI/CD pipeline | ✅ Yes |
@@ -106,7 +106,7 @@ Sentinel uses zero AI to evaluate. Rules are code, not inference.
 
 ## The Trust Contract
 
-Sentinel makes these promises (see [contract.md](contract.md)):
+Phylax makes these promises (see [contract.md](contract.md)):
 
 1. **Traces are immutable** — Never modified after creation
 2. **Verdicts are deterministic** — Same input = same result
@@ -120,7 +120,7 @@ If you can't trust your testing tool, it's worthless.
 ## Summary
 
 ```
-Sentinel = Trace + Expect + Bless + Check
+Phylax = Trace + Expect + Bless + Check
 
 Trace   → Record everything
 Expect  → Define PASS/FAIL rules

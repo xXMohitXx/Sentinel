@@ -1,3 +1,3 @@
 """
-Sentinel Tests Package
+Phylax Tests Package
 """

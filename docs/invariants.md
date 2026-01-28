@@ -1,13 +1,13 @@
-# Sentinel Invariants (v1.0)
+# Phylax Invariants (v1.0)
 
-> **This is Sentinel's constitution.**  
+> **This is Phylax's constitution.**  
 > These invariants are non-negotiable and enforced by tests.
 
 ---
 
 ## Purpose
 
-Invariants are properties that Sentinel guarantees to **always** hold true. Unlike the API contract (which covers syntax), invariants cover **semantics** — the meaning of Sentinel's behavior.
+Invariants are properties that Phylax guarantees to **always** hold true. Unlike the API contract (which covers syntax), invariants cover **semantics** — the meaning of Phylax's behavior.
 
 ---
 
@@ -64,24 +64,24 @@ INVARIANT: Graphs are derived views, not mutable state.
 
 ---
 
-### 4. Sentinel Never Executes User Logic
+### 4. Phylax Never Executes User Logic
 
 ```
-INVARIANT: Sentinel observes but does not control.
+INVARIANT: Phylax observes but does not control.
 ```
 
-- Sentinel captures traces AFTER user code runs
-- Sentinel never modifies user function behavior
+- Phylax captures traces AFTER user code runs
+- Phylax never modifies user function behavior
 - `@trace` is transparent — function output is unchanged
 - Replay re-invokes adapters, not user functions
 
-**Why**: Sentinel is an observer. If it changed behavior, tracing would be meaningless.
+**Why**: Phylax is an observer. If it changed behavior, tracing would be meaningless.
 
 **Test**: `test_trace_transparency()`
 
 ---
 
-### 5. Sentinel Never Makes AI-Based Judgments
+### 5. Phylax Never Makes AI-Based Judgments
 
 ```
 INVARIANT: All verdicts are deterministic rules.
@@ -125,8 +125,8 @@ INVARIANT: Traces in an execution form a DAG.
 INVARIANT: Blessed traces are compared by content hash.
 ```
 
-- `sentinel bless` stores output hash
-- `sentinel check` compares current hash to blessed hash
+- `Phylax bless` stores output hash
+- `Phylax check` compares current hash to blessed hash
 - Hash mismatch = regression
 - Hash collision (false positive) is astronomically rare
 
@@ -139,7 +139,7 @@ INVARIANT: Blessed traces are compared by content hash.
 ### 8. CI Exit Codes Are Dependable
 
 ```
-INVARIANT: `sentinel check` returns predictable exit codes.
+INVARIANT: `Phylax check` returns predictable exit codes.
 ```
 
 | Condition | Exit Code |
@@ -229,4 +229,4 @@ If an invariant is violated:
 ---
 
 *Last updated: 2026-01-26*  
-*Applies to: Sentinel v1.0.0+*
+*Applies to: Phylax v1.0.0+*

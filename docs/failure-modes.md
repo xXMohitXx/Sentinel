@@ -1,4 +1,4 @@
-# Sentinel Failure Modes (v1.0)
+# Phylax Failure Modes (v1.0)
 
 > **v1 is trusted when failure behavior is predictable.**  
 > This document defines what happens when things go wrong.
@@ -7,7 +7,7 @@
 
 ## Purpose
 
-This document defines Sentinel's behavior in error scenarios. Users must know exactly what Sentinel will do when things fail — ambiguity destroys trust.
+This document defines Phylax's behavior in error scenarios. Users must know exactly what Phylax will do when things fail — ambiguity destroys trust.
 
 ---
 
@@ -67,9 +67,9 @@ When working with blessed traces:
 
 | Scenario | Behavior |
 |----------|----------|
-| Missing golden (no blessed trace exists) | `sentinel check` warns, exits 0 |
-| Golden exists, output matches | `sentinel check` exits 0 |
-| Golden exists, output differs | `sentinel check` exits 1 |
+| Missing golden (no blessed trace exists) | `Phylax check` warns, exits 0 |
+| Golden exists, output matches | `Phylax check` exits 0 |
+| Golden exists, output differs | `Phylax check` exits 1 |
 | Multiple goldens (same model) | Uses most recent |
 
 **Key guarantee**: Missing golden is NOT a failure. Only regressions fail.
@@ -127,13 +127,13 @@ API error handling:
 
 | Command | Exit 0 | Exit 1 | Exit 2 |
 |---------|--------|--------|--------|
-| `sentinel init` | Success | Already initialized | Error |
-| `sentinel server` | Clean shutdown | - | Crash |
-| `sentinel list` | Success | - | Error |
-| `sentinel show <id>` | Found | Not found | Error |
-| `sentinel replay <id>` | Success | Replay failed | Error |
-| `sentinel bless <id>` | Success | Already blessed | Error |
-| `sentinel check` | All pass | Any fail | Error |
+| `Phylax init` | Success | Already initialized | Error |
+| `Phylax server` | Clean shutdown | - | Crash |
+| `Phylax list` | Success | - | Error |
+| `Phylax show <id>` | Found | Not found | Error |
+| `Phylax replay <id>` | Success | Replay failed | Error |
+| `Phylax bless <id>` | Success | Already blessed | Error |
+| `Phylax check` | All pass | Any fail | Error |
 
 **Key guarantee**: Exit codes are predictable for scripting.
 
@@ -165,7 +165,7 @@ These may vary between runs:
 | `datetime.now()` | Different every call |
 | File ordering in storage | May vary by filesystem |
 
-### What Sentinel Enforces vs Observes
+### What Phylax Enforces vs Observes
 
 | Aspect | Role |
 |--------|------|
@@ -225,4 +225,4 @@ def test_invalid_expectation_fails_fast():
 ---
 
 *Last updated: 2026-01-26*  
-*Applies to: Sentinel v1.0.0+*
+*Applies to: Phylax v1.0.0+*

@@ -4,7 +4,7 @@ Example: Phase 13 Execution Context
 Demonstrates:
 - Traces grouped by execution_id
 - Parent-child relationships via node_id/parent_node_id
-- sentinel.execution() context manager
+- Phylax.execution() context manager
 """
 
 import os

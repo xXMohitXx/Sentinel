@@ -1,5 +1,5 @@
 """
-Sentinel SDK - LLM Tracing & Debugging
+Phylax SDK - LLM Tracing & Debugging
 
 This package provides the core capture layer for tracing LLM calls.
 """

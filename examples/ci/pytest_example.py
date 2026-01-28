@@ -1,16 +1,16 @@
 """
 Pytest Integration Example
 
-This example shows how to run Sentinel checks as part of pytest.
+This example shows how to run Phylax checks as part of pytest.
 """
 
 import subprocess
 import sys
 
 
-def test_sentinel_golden_traces():
+def test_Phylax_golden_traces():
     """
-    Run sentinel check as a pytest test.
+    Run Phylax check as a pytest test.
     
     This test will:
     1. Replay all blessed (golden) traces
@@ -32,7 +32,7 @@ def test_sentinel_golden_traces():
         print(result.stderr)
     
     # Assert exit code is 0 (all golden traces pass)
-    assert result.returncode == 0, "Sentinel check failed - golden trace regression detected"
+    assert result.returncode == 0, "Phylax check failed - golden trace regression detected"
 
 
 if __name__ == "__main__":

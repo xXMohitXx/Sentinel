@@ -1,8 +1,8 @@
 """
-Sentinel CLI - Command Line Interface
+Phylax CLI - Command Line Interface
 
 Commands:
-- init: Initialize Sentinel configuration
+- init: Initialize Phylax configuration
 - server: Start the trace server
 - list: List traces
 - show: Show a specific trace
@@ -15,11 +15,11 @@ import os
 
 
 def cmd_init(args):
-    """Initialize Sentinel configuration."""
+    """Initialize Phylax configuration."""
     import yaml
     from pathlib import Path
     
-    config_dir = Path(os.path.expanduser("~/.sentinel"))
+    config_dir = Path(os.path.expanduser("~/.phylax"))
     config_dir.mkdir(parents=True, exist_ok=True)
     
     config_file = config_dir / "config.yaml"
@@ -47,7 +47,7 @@ def cmd_init(args):
     with open(config_file, "w") as f:
         yaml.dump(default_config, f, default_flow_style=False)
     
-    print(f"Initialized Sentinel at {config_dir}")
+    print(f"Initialized Phylax at {config_dir}")
     print(f"Config: {config_file}")
     print(f"Traces: {config_dir / 'traces'}")
     return 0
@@ -57,7 +57,7 @@ def cmd_server(args):
     """Start the trace server."""
     import uvicorn
     
-    print(f"Starting Sentinel server on {args.host}:{args.port}")
+    print(f"Starting Phylax server on {args.host}:{args.port}")
     print(f"API docs: http://{args.host}:{args.port}/docs")
     print(f"UI: http://{args.host}:{args.port}/ui")
     
@@ -293,11 +293,11 @@ def cmd_check(args):
     
     if not blessed_traces:
         print("⚠️  No blessed traces found.")
-        print("   Use 'sentinel bless <trace_id>' to mark a trace as golden.")
+        print("   Use 'phylax bless <trace_id>' to mark a trace as golden.")
         return 0
     
     print("═" * 60)
-    print("🔍 SENTINEL CHECK - Replaying Golden Traces")
+    print("🔍 PHYLAX CHECK - Replaying Golden Traces")
     print("═" * 60)
     print(f"Found {len(blessed_traces)} blessed trace(s)")
     print()
@@ -401,7 +401,7 @@ def cmd_graph_check(args):
     storage = FileStorage()
     
     print("\n" + "═" * 60)
-    print("🔍 SENTINEL GRAPH CHECK")
+    print("🔍 PHYLAX GRAPH CHECK")
     print("═" * 60 + "\n")
     
     # Get all executions
@@ -444,14 +444,14 @@ def cmd_graph_check(args):
 def main():
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        prog="sentinel",
+        prog="phylax",
         description="Developer-first local LLM tracing, replay & debugging system",
     )
     
     subparsers = parser.add_subparsers(dest="command", help="Commands")
     
     # init command
-    init_parser = subparsers.add_parser("init", help="Initialize Sentinel")
+    init_parser = subparsers.add_parser("init", help="Initialize Phylax")
     init_parser.add_argument("--force", "-f", action="store_true", help="Overwrite existing config")
     
     # server command
@@ -513,4 +513,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

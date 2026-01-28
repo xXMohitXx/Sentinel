@@ -1,5 +1,5 @@
 """
-Sentinel Execution Context
+Phylax Execution Context
 
 Provides execution context management for grouping traces and tracking causality.
 
@@ -16,9 +16,9 @@ from typing import Optional, Generator
 
 
 # Context variables for execution tracking
-_execution_id: ContextVar[str] = ContextVar('sentinel_execution_id')
-_current_node_id: ContextVar[str] = ContextVar('sentinel_current_node_id')
-_node_stack: ContextVar[list] = ContextVar('sentinel_node_stack', default=[])
+_execution_id: ContextVar[str] = ContextVar('phylax_execution_id')
+_current_node_id: ContextVar[str] = ContextVar('phylax_current_node_id')
+_node_stack: ContextVar[list] = ContextVar('phylax_node_stack', default=[])
 
 
 @contextmanager
@@ -30,9 +30,9 @@ def execution() -> Generator[str, None, None]:
     Parent-child relationships are tracked automatically.
     
     Usage:
-        import sentinel
+        import phylax
         
-        with sentinel.execution() as exec_id:
+        with phylax.execution() as exec_id:
             step_a()  # parent_node_id = None (root)
             step_b()  # parent_node_id = step_a.node_id
             

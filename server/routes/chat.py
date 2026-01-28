@@ -38,7 +38,7 @@ class ChatCompletionRequest(BaseModel):
     stop: Optional[list[str]] = None
     stream: Optional[bool] = False
     
-    # Sentinel-specific options
+    # Phylax-specific options
     trace: Optional[bool] = True  # Whether to record a trace
 
 
@@ -64,7 +64,7 @@ class ChatCompletionResponse(BaseModel):
     model: str
     choices: list[ChatCompletionChoice]
     usage: ChatCompletionUsage
-    # Sentinel addition
+    # Phylax addition
     trace_id: Optional[str] = None
 
 

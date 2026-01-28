@@ -171,7 +171,7 @@ def test_phase_25():
 def main():
     print('')
     print('#' * 60)
-    print('  SENTINEL PHASE 19-25 COMPREHENSIVE TEST')
+    print('  Phylax PHASE 19-25 COMPREHENSIVE TEST')
     print('#' * 60)
     print('')
     

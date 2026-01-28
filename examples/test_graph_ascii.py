@@ -49,7 +49,7 @@ def create_mock_trace(
 def main():
     print("")
     print("#" * 60)
-    print("  SENTINEL PHASE 13-18 GRAPH FEATURES TEST")
+    print("  Phylax PHASE 13-18 GRAPH FEATURES TEST")
     print("#" * 60)
     
     # Phase 13: Create traces with causality

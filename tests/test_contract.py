@@ -97,7 +97,7 @@ def test_graph_determinism():
 
 
 # =============================================================================
-# INVARIANT 5: Sentinel Never Makes AI-Based Judgments
+# INVARIANT 5: Phylax Never Makes AI-Based Judgments
 # =============================================================================
 
 def test_deterministic_expectations():

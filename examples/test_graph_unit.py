@@ -177,7 +177,7 @@ def test_phase_18_performance(graph):
 
 def main():
     print("\n" + "#" * 60)
-    print("  SENTINEL PHASE 13-18 GRAPH FEATURES TEST")
+    print("  Phylax PHASE 13-18 GRAPH FEATURES TEST")
     print("  (No API key required - pure Python tests)")
     print("#" * 60)
     

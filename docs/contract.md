@@ -1,13 +1,13 @@
-# Sentinel API Contract (v1.0)
+# Phylax API Contract (v1.0)
 
-> **This document defines what Sentinel promises forever.**  
+> **This document defines what Phylax promises forever.**  
 > If it's not in this contract, it's not promised.
 
 ---
 
 ## Purpose
 
-This contract guarantees API stability for Sentinel v1.x releases. Breaking changes to items in this contract require a major version bump (v2.0).
+This contract guarantees API stability for Phylax v1.x releases. Breaking changes to items in this contract require a major version bump (v2.0).
 
 ---
 
@@ -55,14 +55,14 @@ with execution(name: str):
 
 | Command | Behavior (Guaranteed) |
 |---------|----------------------|
-| `sentinel init` | Creates `~/.sentinel/` directory and config |
-| `sentinel server` | Starts API server on port 8000 |
-| `sentinel list` | Lists traces (newest first) |
-| `sentinel list --failed` | Lists only failed traces |
-| `sentinel show <id>` | Displays trace details |
-| `sentinel replay <id>` | Re-executes trace with same prompt |
-| `sentinel bless <id>` | Marks trace as golden baseline |
-| `sentinel check` | CI check: exits 0 (pass) or 1 (fail) |
+| `Phylax init` | Creates `~/.Phylax/` directory and config |
+| `Phylax server` | Starts API server on port 8000 |
+| `Phylax list` | Lists traces (newest first) |
+| `Phylax list --failed` | Lists only failed traces |
+| `Phylax show <id>` | Displays trace details |
+| `Phylax replay <id>` | Re-executes trace with same prompt |
+| `Phylax bless <id>` | Marks trace as golden baseline |
+| `Phylax check` | CI check: exits 0 (pass) or 1 (fail) |
 
 ### Trace Schema (Core Fields)
 
@@ -192,4 +192,4 @@ This contract is enforced by:
 ---
 
 *Last updated: 2026-01-26*  
-*Applies to: Sentinel v1.0.0+*
+*Applies to: Phylax v1.0.0+*

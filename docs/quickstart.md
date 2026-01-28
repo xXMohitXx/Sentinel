@@ -1,4 +1,4 @@
-# Sentinel Quickstart
+# Phylax Quickstart
 
 > **Goal: From zero to CI failure in 10 minutes.**
 
@@ -7,8 +7,8 @@
 ## 1. Install (2 min)
 
 ```bash
-git clone https://github.com/xXMohitXx/Sentinel.git
-cd Sentinel
+git clone https://github.com/xXMohitXx/Phylax.git
+cd Phylax
 pip install -r requirements.txt
 ```
 
@@ -86,8 +86,8 @@ python -m cli.main check
 ## 6. Add to CI (2 min)
 
 ```yaml
-# .github/workflows/sentinel.yml
-name: Sentinel Check
+# .github/workflows/Phylax.yml
+name: Phylax Check
 on: [push]
 jobs:
   check:
@@ -116,6 +116,6 @@ jobs:
 
 ## Next Steps
 
-- [Mental Model](mental-model.md) — What Sentinel is
+- [Mental Model](mental-model.md) — What Phylax is
 - [Graph Model](graph-model.md) — Multi-step agents
 - [Failure Playbook](failure-playbook.md) — Debug failures

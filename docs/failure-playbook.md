@@ -1,4 +1,4 @@
-# Sentinel Failure Playbook
+# Phylax Failure Playbook
 
 > **How to debug failures — fast.**
 
@@ -42,7 +42,7 @@ UI shows ❌ for a trace, verdict is "fail".
 ## 2. Golden Mismatch
 
 ### Symptom
-`sentinel check` fails with hash mismatch.
+`Phylax check` fails with hash mismatch.
 
 ### Debug Steps
 
@@ -107,7 +107,7 @@ Execution graph shows ❌ overall verdict.
 ## 4. CI Check Failing
 
 ### Symptom
-`sentinel check` exits 1 in CI.
+`Phylax check` exits 1 in CI.
 
 ### Debug Steps
 
@@ -162,7 +162,7 @@ Replay trace has different output than expected.
 ## 6. Server Not Starting
 
 ### Symptom
-`sentinel server` fails.
+`Phylax server` fails.
 
 ### Debug Steps
 
@@ -172,7 +172,7 @@ Replay trace has different output than expected.
    lsof -i :8000               # Linux/Mac
    ```
 
-2. **Check config** — Is `~/.sentinel/` readable?
+2. **Check config** — Is `~/.Phylax/` readable?
 
 3. **Check dependencies**
    ```bash
@@ -200,7 +200,7 @@ Made calls but UI is empty.
    - Is trace sent to right host?
 
 4. **Check storage**
-   - Does `~/.sentinel/traces/` exist?
+   - Does `~/.Phylax/traces/` exist?
    - Are there JSON files?
 
 ---

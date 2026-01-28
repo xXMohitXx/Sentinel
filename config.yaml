@@ -1,10 +1,10 @@
-# Sentinel Configuration
+# Phylax Configuration
 # Developer-first local LLM tracing, replay & debugging system
 
 # Storage settings
 storage:
-  # Base directory for traces (defaults to ~/.sentinel)
-  base_dir: ~/.sentinel
+  # Base directory for traces (defaults to ~/.phylax)
+  base_dir: ~/.phylax
   # Primary storage format
   format: json
   # Enable SQLite indexing for fast queries

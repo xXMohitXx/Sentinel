@@ -1,5 +1,5 @@
 """
-Sentinel Server - Main FastAPI Application
+Phylax Server - Main FastAPI Application
 
 Purpose:
 - Expose traces via HTTP
@@ -16,9 +16,9 @@ from server.routes import traces, replay, chat
 
 # Create FastAPI app
 app = FastAPI(
-    title="Sentinel",
+    title="Phylax",
     description="Developer-first local LLM tracing, replay & debugging system",
-    version="0.1.0",
+    version="1.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
 )
@@ -57,8 +57,8 @@ if assets_path.exists():
 async def root():
     """Root endpoint with API info."""
     return {
-        "name": "Sentinel",
-        "version": "0.1.0",
+        "name": "Phylax",
+        "version": "1.0.0",
         "description": "Developer-first local LLM tracing, replay & debugging system",
         "docs": "/docs",
         "ui": "/ui",

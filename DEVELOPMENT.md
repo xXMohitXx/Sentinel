@@ -1,6 +1,6 @@
 # Development Guide
 
-Complete guide for local development, testing, and contributing to Sentinel v1.0.
+Complete guide for local development, testing, and contributing to Phylax v1.0.
 
 ---
 
@@ -8,13 +8,13 @@ Complete guide for local development, testing, and contributing to Sentinel v1.0
 
 ```bash
 # Clone
-git clone https://github.com/xXMohitXx/Sentinel.git
-cd Sentinel
+git clone https://github.com/xXMohitXx/Phylax.git
+cd Phylax
 
 # Virtual environment
-python -m venv sentinel
-.\sentinel\Scripts\activate  # Windows
-# source sentinel/bin/activate  # Linux/Mac
+python -m venv Phylax
+.\Phylax\Scripts\activate  # Windows
+# source Phylax/bin/activate  # Linux/Mac
 
 # Install
 pip install -r requirements.txt
@@ -69,7 +69,7 @@ python examples/test_graph_features.py
 ## Project Structure
 
 ```
-sentinel/
+Phylax/
 ├── sdk/
 │   ├── __init__.py            # Version (1.0.0)
 │   ├── schema.py              # Trace schema
@@ -128,7 +128,7 @@ sentinel/
 - Traces are audit artifacts
 
 ### Storage
-- JSON files as source of truth (`~/.sentinel/traces/`)
+- JSON files as source of truth (`~/.Phylax/traces/`)
 - SQLite index for queries
 - Date-organized directories
 
@@ -175,7 +175,7 @@ test: add tests
 
 ### Trace Files
 ```
-~/.sentinel/traces/YYYY-MM-DD/<trace_id>.json
+~/.Phylax/traces/YYYY-MM-DD/<trace_id>.json
 ```
 
 ### Common Issues
